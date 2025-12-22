@@ -1,4 +1,4 @@
-name: "Final Master Build v3.3.1"
+name: "ProTimer Final Master v4"
 
 on:
   push:
@@ -6,10 +6,9 @@ on:
       - main
 
 jobs:
+  # المرحلة 1: بناء كل نظام بشكل مستقل تماماً
   build:
-    name: Build for ${{ matrix.os }}
-    permissions:
-      contents: write
+    name: Build ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -35,65 +34,63 @@ jobs:
         with:
           targets: ${{ matrix.os == 'android' && 'aarch64-linux-android' || '' }}
 
-      - name: sync version and install
-        shell: bash
+      - name: install dependencies
         run: |
-          npm version 3.3.1 --no-git-tag-version || true
+          npm version 4.0.0 --no-git-tag-version || true
           npm install
 
-      - name: build android
-        if: matrix.os == 'android'
+      - name: build app
         run: |
-          echo "y" | npx tauri android init
-          npx tauri android build --debug --target aarch64
+          if [ "${{ matrix.os }}" = "android" ]; then
+            echo "y" | npx tauri android init
+            npx tauri android build --debug --target aarch64
+          else
+            npx tauri build
+          fi
+        shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: build desktop
-        if: matrix.os != 'android'
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          uploadArtifacts: false
-
-      - name: collect assets
+      # تجميع الملفات في مجلد واحد بأي طريقة كانت (حل مشكلة المسارات)
+      - name: collect binaries
         shell: bash
         run: |
-          mkdir -p final-artifacts
-          find . -name "*.apk" -exec cp {} final-artifacts/ \;
-          find . -name "*.msi" -exec cp {} final-artifacts/ \;
-          find . -name "*.dmg" -exec cp {} final-artifacts/ \;
-          find . -name "*.exe" -exec cp {} final-artifacts/ \;
+          mkdir -p output_files
+          find . -name "*.apk" -exec cp {} output_files/ \;
+          find . -name "*.msi" -exec cp {} output_files/ \;
+          find . -name "*.dmg" -exec cp {} output_files/ \;
+          find . -name "*.exe" -exec cp {} output_files/ \;
+          ls -R output_files/
 
-      - name: upload temporary artifacts
+      - name: upload to temporary storage
         uses: actions/upload-artifact@v4
         with:
           name: assets-${{ matrix.os }}
-          path: final-artifacts/
+          path: output_files/
 
+  # المرحلة 2: إنشاء الـ Release ورفع الملفات مرة واحدة فقط (يمنع الـ 404 والـ Collision)
   publish:
-    name: Final Release Creation
+    name: Final Global Release
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: download all assets
+      - name: download all built files
         uses: actions/download-artifact@v4
         with:
-          path: final-release-assets
+          path: final-assets
           merge-multiple: true
 
-      - name: create master release
+      - name: create release v4.0.0
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v3.3.1
-          name: "App v3.3.1 - Global Stable"
-          files: final-release-assets/*
+          tag_name: v4.0.0
+          name: "Timer App v4.0.0 - Official Final"
+          files: final-assets/*
           overwrite: true
           body: |
-            تم حل جميع مشاكل الرفع والتوافق:
-            - Android: حمل ملف الـ debug.apk.
-            - Windows: ملف الـ .exe أو .msi.
-            - Mac: ملف الـ .dmg.
+            النسخة الشاملة النهائية:
+            - Android: (debug.apk) جاهز للتثبيت.
+            - Windows: (.exe / .msi).
+            - Mac: (.dmg).
