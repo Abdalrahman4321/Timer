@@ -1,86 +1,87 @@
-name: "Final-Rescue-v0"
+name: "Sequential-Final-Build"
 
 on:
   push:
     branches:
       - main
 
-jobs:
-  build:
-    name: Build ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: "macos-latest"
-            os: mac
-          - platform: "windows-latest"
-            os: windows
-          - platform: "ubuntu-latest"
-            os: android
+permissions:
+  contents: write
 
-    runs-on: ${{ matrix.platform }}
+jobs:
+  # 1. المرحلة الأولى: الأندرويد فقط
+  build-android:
+    name: Step 1 - Android Build
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: setup node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.os == 'android' && 'aarch64-linux-android' || '' }}
-
-      - name: force reconstruct & build
-        shell: bash
+          targets: aarch64-linux-android
+      
+      - name: build android
         run: |
-          # الانتقال للمجلد الصحيح إذا كان المشروع داخل مجلد فرعي
-          cd $(find . -name "package.json" -exec dirname {} \;) || echo "In root"
-          
-          npm install -g @tauri-apps/cli
           npm install
-          
-          # بناء التطبيق حسب المنصة
-          if [ "${{ matrix.os }}" = "android" ]; then
-            yes | npx tauri android init || true
-            npx tauri android build --debug --target aarch64
-          else
-            npx tauri build
-          fi
-
-      - name: collect all results
-        shell: bash
-        run: |
-          mkdir -p final_assets
-          find . -name "*.apk" -exec cp {} final_assets/ \; || true
-          find . -name "*.msi" -exec cp {} final_assets/ \; || true
-          find . -name "*.dmg" -exec cp {} final_assets/ \; || true
-          find . -name "*.exe" -exec cp {} final_assets/ \; || true
-
-      - name: upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: assets-${{ matrix.os }}
-          path: final_assets/
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: download
-        uses: actions/download-artifact@v4
-        with:
-          path: all-files
-          merge-multiple: true
-
-      - name: release
+          npm install -g @tauri-apps/cli
+          # البحث عن مكان المشروع والدخول إليه
+          cd $(find . -name "package.json" -exec dirname {} \;)
+          yes | npx tauri android init || true
+          npx tauri android build --debug --target aarch64
+      
+      - name: release android
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v-final
-          name: "Timer App - Final Version"
-          files: all-files/*
-          overwrite: true
+          name: "Timer App - Final"
+          files: "**/bundle/android/*.apk"
+
+  # 2. المرحلة الثانية: الماك (تبدأ بعد نجاح الأندرويد)
+  build-macos:
+    name: Step 2 - MacOS Build
+    needs: build-android
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      
+      - name: build mac
+        run: |
+          npm install
+          npx tauri build
+      
+      - name: release mac
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v-final
+          files: "**/bundle/dmg/*.dmg"
+
+  # 3. المرحلة الثالثة: الويندوز (تبدأ بعد نجاح الماك)
+  build-windows:
+    name: Step 3 - Windows Build
+    needs: build-macos
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      
+      - name: build windows
+        shell: bash
+        run: |
+          npm install
+          npx tauri build
+      
+      - name: release windows
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v-final
+          files: |
+            **/bundle/msi/*.msi
+            **/bundle/exe/*.exe
