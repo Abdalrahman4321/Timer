@@ -26,7 +26,6 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          # تعديل مهم جداً لضمان وجود تعريفات معالجات الأندرويد
           targets: ${{ matrix.platform == 'ubuntu-latest' && 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android' || '' }}
 
       - name: install frontend dependencies
@@ -49,12 +48,14 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # إضافة المتغيرات دي عشان Rust يشوف الـ NDK Linker صح
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: aarch64-linux-android24-clang
+          PATH: ${{ matrix.platform == 'ubuntu-latest' && format('{0}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin:{1}', env.ANDROID_HOME, env.PATH) || env.PATH }}
         with:
           tagName: v1.0.0
           releaseName: "App v1.0.0"
-          releaseBody: "Windows, Android, and macOS versions."
+          releaseBody: "Windows, macOS, and Android (Experimental) versions."
           releaseDraft: false
           prerelease: false
           allowUpdates: true
-          # التعديل هنا لضمان بناء نسخة الأندرويد بشكل صحيح
           args: ${{ matrix.platform == 'ubuntu-latest' && '--target aarch64-linux-android' || '' }}
