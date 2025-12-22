@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  # --- بناء نسخة الويندوز (EXE & MSI) ---
+  # بناء نسخة الويندوز (EXE)
   build-windows:
     runs-on: windows-latest
     steps:
@@ -22,7 +22,7 @@ jobs:
         run: npm install --no-package-lock
       - name: Build Windows
         run: npx tauri build
-      - name: Upload Windows Assets
+      - name: Upload Windows EXE
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.0
@@ -32,7 +32,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # --- بناء نسخة الأندرويد (APK) ---
+  # بناء نسخة الأندرويد (APK)
   build-android:
     runs-on: ubuntu-latest
     steps:
@@ -61,7 +61,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.0
-          # استخدام المسار الشامل لضمان إيجاد الـ APK بنجاح
-          files: "src-tauri/gen/android/**/build/outputs/apk/debug/*.apk"
+          # تم تحديث المسار لضمان إيجاد الملف
+          files: "src-tauri/gen/android/app/build/outputs/apk/debug/*.apk"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
