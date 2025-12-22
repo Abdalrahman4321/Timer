@@ -47,11 +47,15 @@ jobs:
           npm install --no-package-lock
           npm install -g @tauri-apps/cli
           export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125
+          
+          # تنظيف كامل للمجلدات لضمان عدم وجود تضارب في المعرف (Identifier)
           rm -rf src-tauri/gen/android
           npx tauri android init
-          # تصحيح الأمر: إزالة التكرار وتحديد نوع المخرج بشكل صحيح
-          npx tauri android build --target aarch64 --release
+          
+          # الأمر الصحيح للبناء الموقّع دون أخطاء في الوسائط
+          npx tauri android build --target aarch64
         env:
+          # توقيع الحزمة لتعمل على أحدث أنظمة أندرويد
           TAURI_ANDROID_KEYSTORE_PATH: "../../../timer.keystore"
           TAURI_ANDROID_KEYSTORE_PASSWORD: "timer123"
           TAURI_ANDROID_KEY_ALIAS: "timer-alias"
@@ -60,13 +64,13 @@ jobs:
       - name: Prepare Final APK
         run: |
           mkdir -p output
-          # البحث عن النسخة الموقعة التي أنتجها Gradle
+          # البحث عن النسخة الموقعة رقمياً لضمان صلاحية الحزمة
           find src-tauri/gen/android -name "*release-signed.apk" -exec cp {} output/Timer-Final.apk \;
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.1
+          tag_name: v1.1.2
           files: output/Timer-Final.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
