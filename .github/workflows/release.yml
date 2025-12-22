@@ -12,7 +12,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # هنا أضفنا macos-latest لبناء نسخة الماك
         platform: [windows-latest, ubuntu-latest, macos-latest]
 
     runs-on: ${{ matrix.platform }}
@@ -27,13 +26,11 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          # نجهز Rust لدعم الموبايل فقط عند العمل على سيرفر Ubuntu
           targets: ${{ matrix.platform == 'ubuntu-latest' && 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android' || '' }}
 
       - name: install frontend dependencies
         run: npm install --no-package-lock
 
-      # إعدادات الأندرويد (تظهر فقط في سيرفر Ubuntu)
       - name: setup Android SDK
         if: matrix.platform == 'ubuntu-latest'
         uses: android-actions/setup-android@v3
@@ -44,11 +41,11 @@ jobs:
           sdkmanager "ndk;26.1.10909125"
           echo "NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
 
+      # التعديل هنا: نرسل حرف y للأمر ليوافق تلقائياً
       - name: init android on CI
         if: matrix.platform == 'ubuntu-latest'
-        run: npx tauri android init --yes
+        run: echo "y" | npx tauri android init
 
-      # بناء ورفع الملفات
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -59,5 +56,4 @@ jobs:
           releaseDraft: false
           prerelease: false
           allowUpdates: true
-          # الماك والويندوز سيعملان تلقائياً، الأندرويد يحتاج أمر خاص
           args: ${{ matrix.platform == 'ubuntu-latest' && '--target android' || '' }}
