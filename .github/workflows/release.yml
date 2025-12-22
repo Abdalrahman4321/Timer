@@ -26,6 +26,7 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
+          # تعديل مهم جداً لضمان وجود تعريفات معالجات الأندرويد
           targets: ${{ matrix.platform == 'ubuntu-latest' && 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android' || '' }}
 
       - name: install frontend dependencies
@@ -41,7 +42,6 @@ jobs:
           sdkmanager "ndk;26.1.10909125"
           echo "NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
 
-      # التعديل هنا: نرسل حرف y للأمر ليوافق تلقائياً
       - name: init android on CI
         if: matrix.platform == 'ubuntu-latest'
         run: echo "y" | npx tauri android init
@@ -52,8 +52,9 @@ jobs:
         with:
           tagName: v1.0.0
           releaseName: "App v1.0.0"
-          releaseBody: "Now available for Windows, Android, and macOS!"
+          releaseBody: "Windows, Android, and macOS versions."
           releaseDraft: false
           prerelease: false
           allowUpdates: true
-          args: ${{ matrix.platform == 'ubuntu-latest' && '--target android' || '' }}
+          # التعديل هنا لضمان بناء نسخة الأندرويد بشكل صحيح
+          args: ${{ matrix.platform == 'ubuntu-latest' && '--target aarch64-linux-android' || '' }}
