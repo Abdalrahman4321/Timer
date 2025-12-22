@@ -1,4 +1,4 @@
-name: "Desktop-Only-Build"
+name: "Desktop-Final-v0"
 
 on:
   push:
@@ -9,59 +9,47 @@ permissions:
   contents: write
 
 jobs:
-  # 1. المرحلة الأولى: الماك بوك
+  # 1. بناء الماك
   build-mac:
-    name: "Step 1: MacOS Build (.dmg)"
+    name: "Mac Step"
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: setup node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          
-      - name: install rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: build mac
+      - name: build
         run: |
           npm install
           npx tauri build
-          
-      - name: upload mac to release
+      - name: upload-mac
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
-          name: "Desktop Version v0"
-          files: "src-tauri/target/release/bundle/dmg/*.dmg"
+          name: "Version v0"
+          # البحث في كل المجلدات الناتجة عن ملف dmg
+          files: "**/target/release/bundle/dmg/*.dmg"
 
-  # 2. المرحلة الثانية: الويندوز (تبدأ بعد نجاح الماك)
+  # 2. بناء الويندوز (ينتظر الماك)
   build-windows:
-    name: "Step 2: Windows Build (.exe)"
+    name: "Windows Step"
     needs: build-mac
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: setup node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          
-      - name: install rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: build windows
+      - name: build
         shell: bash
         run: |
           npm install
           npx tauri build
-          
-      - name: upload windows to release
+      - name: upload-windows
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
+          # البحث عن ملف exe و msi
           files: |
-            src-tauri/target/release/bundle/exe/*.exe
-            src-tauri/target/release/bundle/msi/*.msi
+            **/target/release/bundle/exe/*.exe
+            **/target/release/bundle/msi/*.msi
