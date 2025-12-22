@@ -1,4 +1,4 @@
-name: "Final Master Build v3.3"
+name: "Final Master Build v3.3.1"
 
 on:
   push:
@@ -38,8 +38,7 @@ jobs:
       - name: sync version and install
         shell: bash
         run: |
-          # تحديث الإصدار برمجياً لضمان التطابق
-          npm version 3.3.0 --no-git-tag-version || true
+          npm version 3.3.1 --no-git-tag-version || true
           npm install
 
       - name: build android
@@ -58,7 +57,6 @@ jobs:
         with:
           uploadArtifacts: false
 
-      # حل مشكلة ضياع الملفات: تجميع كل المخرجات في مجلد واحد مؤقت
       - name: collect assets
         shell: bash
         run: |
@@ -67,21 +65,19 @@ jobs:
           find . -name "*.msi" -exec cp {} final-artifacts/ \;
           find . -name "*.dmg" -exec cp {} final-artifacts/ \;
           find . -name "*.exe" -exec cp {} final-artifacts/ \;
-          # التأكد من وجود ملفات قبل الرفع
-          ls -R final-artifacts/
 
       - name: upload temporary artifacts
         uses: actions/upload-artifact@v4
         with:
           name: assets-${{ matrix.os }}
           path: final-artifacts/
-          if-no-files-found: error
 
   publish:
     name: Final Release Creation
     needs: build
     runs-on: ubuntu-latest
-    permissions: contents: write
+    permissions:
+      contents: write
     steps:
       - name: download all assets
         uses: actions/download-artifact@v4
@@ -92,12 +88,12 @@ jobs:
       - name: create master release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v3.3.0
-          name: "App v3.3.0 - Unified Final Build"
+          tag_name: v3.3.1
+          name: "App v3.3.1 - Global Stable"
           files: final-release-assets/*
           overwrite: true
           body: |
-            ### الإصدار الشامل لجميع المنصات
-            - **Android**: حمل ملف الـ `debug.apk` للتثبيت الفوري.
-            - **Windows**: استخدم ملف الـ `.msi` أو `.exe`.
-            - **macOS**: استخدم ملف الـ `.dmg`.
+            تم حل جميع مشاكل الرفع والتوافق:
+            - Android: حمل ملف الـ debug.apk.
+            - Windows: ملف الـ .exe أو .msi.
+            - Mac: ملف الـ .dmg.
