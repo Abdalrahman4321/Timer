@@ -23,11 +23,26 @@ jobs:
         with:
           targets: aarch64-linux-android
 
-      - name: install frontend dependencies
+      - name: fix and install dependencies
         run: |
-          # حذف اي اعدادات اصدار تالفة وفرض اصدار جديد
-          sed -i 's/"version": ".*"/"version": "1.0.0"/' package.json
-          npm install --no-audit --no-fund --legacy-peer-deps
+          # حذف اي ملفات قديمة مسببة للمشاكل
+          rm -f package.json package-lock.json
+          
+          # انشاء ملف package.json جديد ونظيف تماما
+          echo '{
+            "name": "timer-app",
+            "version": "1.0.0",
+            "scripts": {
+              "tauri": "tauri"
+            },
+            "dependencies": {
+              "@tauri-apps/api": "latest",
+              "@tauri-apps/cli": "latest"
+            }
+          }' > package.json
+          
+          # تثبيت المكتبات
+          npm install --no-audit --no-fund
 
       - name: setup Android SDK
         uses: android-actions/setup-android@v3
