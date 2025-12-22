@@ -38,7 +38,7 @@ jobs:
         with:
           targets: aarch64-linux-android
 
-      # إنشاء المفتاح في مكان آمن
+      # إنشاء مفتاح توقيع رقمي جديد داخل السيرفر
       - name: Generate Keystore
         run: |
           keytool -genkey -v -keystore timer.keystore -alias timer-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "timer123" -keypass "timer123" -dname "CN=TimerApp, OU=Dev, O=Timer, L=Cairo, S=Cairo, C=EG"
@@ -49,20 +49,20 @@ jobs:
           npm install -g @tauri-apps/cli
           export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125
           
-          # الخطوة السحرية: حذف المجلد القديم وإعادة التهيئة ليتعرف على الـ Identifier الجديد
+          # أهم خطوة: حذف أي إعدادات قديمة وإعادة بناء بيئة الأندرويد من الصفر
           rm -rf src-tauri/gen/android
           npx tauri android init
           
-          # البناء بوضع الـ Release
+          # تنفيذ البناء بوضع الـ Release مع تمرير الوسائط بشكل صحيح
           npx tauri android build -- --release
         env:
-          # المسار الصحيح للوصول للمفتاح من داخل مجلد البناء العميق
+          # المسار للوصول للمفتاح من داخل مجلدات Gradle العميقة
           TAURI_ANDROID_KEYSTORE_PATH: "../../../timer.keystore"
           TAURI_ANDROID_KEYSTORE_PASSWORD: "timer123"
           TAURI_ANDROID_KEY_ALIAS: "timer-alias"
           TAURI_ANDROID_KEY_PASSWORD: "timer123"
 
-      - name: Upload Signed APK
+      - name: Upload Signed APK to Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.2
