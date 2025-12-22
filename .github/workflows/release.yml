@@ -25,10 +25,7 @@ jobs:
 
       - name: fix and install dependencies
         run: |
-          # حذف اي ملفات قديمة مسببة للمشاكل
           rm -f package.json package-lock.json
-          
-          # انشاء ملف package.json جديد ونظيف تماما
           echo '{
             "name": "timer-app",
             "version": "1.0.0",
@@ -40,8 +37,6 @@ jobs:
               "@tauri-apps/cli": "latest"
             }
           }' > package.json
-          
-          # تثبيت المكتبات
           npm install --no-audit --no-fund
 
       - name: setup Android SDK
@@ -56,7 +51,7 @@ jobs:
         run: echo "y" | npx tauri android init
 
       - name: build android apk
-        run: npx tauri android build --target aarch64-linux-android
+        run: npx tauri android build --target aarch64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CC_aarch64_linux_android: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
