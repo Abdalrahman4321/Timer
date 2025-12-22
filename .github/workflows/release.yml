@@ -1,4 +1,4 @@
-name: "v0-Final-Unified-Build"
+name: "Final-Rescue-v0"
 
 on:
   push:
@@ -28,36 +28,29 @@ jobs:
         with:
           node-version: 20
 
-      - name: install Rust stable
+      - name: install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.os == 'android' && 'aarch64-linux-android' || '' }}
 
-      # الخطوة السحرية: إعادة بناء بيئة Tauri لو كانت مفقودة أو تالفة
-      - name: reconstruct project
+      - name: force reconstruct & build
         shell: bash
         run: |
+          # الانتقال للمجلد الصحيح إذا كان المشروع داخل مجلد فرعي
+          cd $(find . -name "package.json" -exec dirname {} \;) || echo "In root"
+          
           npm install -g @tauri-apps/cli
           npm install
-          # إذا كان مجلد Tauri مفقوداً، قم بتهيئته فوراً لمنع exit code 1
-          if [ ! -d "src-tauri" ]; then
-            echo "src-tauri not found! Initializing..."
-            npx tauri init --app-name "TimerApp" --window-title "Pro Timer" --dist-dir "../dist" --dev-path "http://localhost:1420" --yes
-          fi
-
-      - name: build app
-        shell: bash
-        run: |
+          
+          # بناء التطبيق حسب المنصة
           if [ "${{ matrix.os }}" = "android" ]; then
             yes | npx tauri android init || true
             npx tauri android build --debug --target aarch64
           else
             npx tauri build
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: collect all binaries
+      - name: collect all results
         shell: bash
         run: |
           mkdir -p final_assets
@@ -66,7 +59,7 @@ jobs:
           find . -name "*.dmg" -exec cp {} final_assets/ \; || true
           find . -name "*.exe" -exec cp {} final_assets/ \; || true
 
-      - name: upload artifacts
+      - name: upload
         uses: actions/upload-artifact@v4
         with:
           name: assets-${{ matrix.os }}
@@ -78,17 +71,16 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: download all
+      - name: download
         uses: actions/download-artifact@v4
         with:
-          path: final-release
+          path: all-files
           merge-multiple: true
 
-      - name: create v0 release
+      - name: release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0
-          name: "Official Version v0"
-          files: final-release/*
+          tag_name: v-final
+          name: "Timer App - Final Version"
+          files: all-files/*
           overwrite: true
-          body: "هذه هي النسخة v0 الشاملة التي تم بناؤها بعد حل كافة مشاكل المسارات والأوامر."
