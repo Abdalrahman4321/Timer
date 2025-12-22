@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  # 1. المرحلة الأولى: الأندرويد
+  # 1. مرحلة الأندرويد
   android-job:
     name: "Build Step 1: Android"
     runs-on: ubuntu-latest
@@ -39,17 +39,17 @@ jobs:
           yes | npx tauri android init || true
           npx tauri android build --debug --target aarch64
 
-      - name: Release Android
+      - name: Release Android (APK)
         uses: softprops/action-gh-release@v2
-        if: success()
         with:
           tag_name: v0
           name: "Official Version v0"
+          # البحث عن الـ APK في المسار التلقائي لـ Tauri 2.0
           files: "src-tauri/gen/android/**/build/outputs/apk/debug/*.apk"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 2. المرحلة الثانية: الماك
+  # 2. مرحلة الماك
   macos-job:
     name: "Build Step 2: MacOS"
     needs: android-job
@@ -65,7 +65,7 @@ jobs:
         run: npm install --no-package-lock
       - name: Build MacOS
         run: npx tauri build
-      - name: Release MacOS
+      - name: Release MacOS (DMG)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
@@ -73,7 +73,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 3. المرحلة الثالثة: الويندوز
+  # 3. مرحلة الويندوز
   windows-job:
     name: "Build Step 3: Windows"
     needs: macos-job
@@ -90,10 +90,11 @@ jobs:
       - name: Build Windows
         shell: bash
         run: npx tauri build
-      - name: Release Windows
+      - name: Release Windows (EXE & MSI)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
+          # تعديل المسار ليشمل الـ exe والـ msi معاً
           files: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/exe/*.exe
