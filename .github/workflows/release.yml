@@ -1,76 +1,67 @@
-name: "Timer-Android-Final-Fix"
+name: "Desktop-Only-Build"
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build-android:
-    runs-on: ubuntu-latest
+  # 1. المرحلة الأولى: الماك بوك
+  build-mac:
+    name: "Step 1: MacOS Build (.dmg)"
+    runs-on: macos-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install NDK
-        run: sdkmanager "ndk;26.1.10909125"
-
-      - name: Setup Node.js
+      - uses: actions/checkout@v4
+      
+      - name: setup node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Install Rust
+          
+      - name: install rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android
 
-      - name: Generate Keystore
+      - name: build mac
         run: |
-          keytool -genkey -v -keystore timer.keystore -alias timer-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "timer123" -keypass "timer123" -dname "CN=TimerApp, OU=Dev, O=Timer, L=Cairo, S=Cairo, C=EG"
-
-      - name: Build Android APK
-        run: |
-          npm install --no-package-lock
-          npm install -g @tauri-apps/cli
-          export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125
+          npm install
+          npx tauri build
           
-          # تنظيف كامل للمجلدات لضمان عدم وجود تضارب في المعرف (Identifier)
-          rm -rf src-tauri/gen/android
-          npx tauri android init
-          
-          # الأمر الصحيح للبناء الموقّع دون أخطاء في الوسائط
-          npx tauri android build --target aarch64
-        env:
-          # توقيع الحزمة لتعمل على أحدث أنظمة أندرويد
-          TAURI_ANDROID_KEYSTORE_PATH: "../../../timer.keystore"
-          TAURI_ANDROID_KEYSTORE_PASSWORD: "timer123"
-          TAURI_ANDROID_KEY_ALIAS: "timer-alias"
-          TAURI_ANDROID_KEY_PASSWORD: "timer123"
-
-      - name: Prepare Final APK
-        run: |
-          mkdir -p output
-          # البحث عن النسخة الموقعة رقمياً لضمان صلاحية الحزمة
-          find src-tauri/gen/android -name "*release-signed.apk" -exec cp {} output/Timer-Final.apk \;
-
-      - name: Upload Release
+      - name: upload mac to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.2
-          files: output/Timer-Final.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v0
+          name: "Desktop Version v0"
+          files: "src-tauri/target/release/bundle/dmg/*.dmg"
+
+  # 2. المرحلة الثانية: الويندوز (تبدأ بعد نجاح الماك)
+  build-windows:
+    name: "Step 2: Windows Build (.exe)"
+    needs: build-mac
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: install rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: build windows
+        shell: bash
+        run: |
+          npm install
+          npx tauri build
+          
+      - name: upload windows to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v0
+          files: |
+            src-tauri/target/release/bundle/exe/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
