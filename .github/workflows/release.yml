@@ -1,4 +1,4 @@
-name: "Final Unified Build v3"
+name: "Final Build v3.0 - Stable"
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - main
 
 jobs:
+  # المرحلة الأولى: بناء كل المنصات وتخزينها مؤقتاً
   build:
     permissions:
       contents: write
@@ -49,7 +50,6 @@ jobs:
           }' > package.json
           npm install --no-audit --no-fund
 
-      # بناء الأندرويد
       - name: build android
         if: matrix.os == 'android'
         run: |
@@ -58,25 +58,43 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # بناء الماك والويندوز
       - name: build desktop
         if: matrix.os != 'android'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # نوقف الرفع التلقائي لتجنب التصادم الظاهر في الصورة
-          uploadArtifacts: false 
+          uploadArtifacts: false
 
-      # رفع الملفات لصفحة الـ Release (حل مشكلة التصادم 404)
-      - name: upload assets
-        uses: softprops/action-gh-release@v2
+      # تخزين الملفات الناتجة مؤقتاً لجمعها لاحقاً
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v3.0.0
-          files: |
+          name: build-outputs-${{ matrix.os }}
+          path: |
             src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/setup.exe
             **/*.exe
-          append_body: true
+
+  # المرحلة الثانية: جمع كل الملفات ورفعها في Release واحد
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-builds
+          merge-multiple: true
+
+      - name: create final release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v3.0.0
+          files: all-builds/**/*
           overwrite: true
+          body: "إصدار شامل للويندوز، الماك، والأندرويد (نسخة الموبايل هي ملف الـ debug.apk)"
