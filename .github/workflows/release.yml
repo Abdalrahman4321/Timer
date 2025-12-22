@@ -1,4 +1,4 @@
-name: "Final Unified Build v2.1"
+name: "Final Unified Build v3"
 
 on:
   push:
@@ -34,10 +34,11 @@ jobs:
       - name: fix and install dependencies
         shell: bash
         run: |
+          # مسح الملفات القديمة وبناء ملف جديد بإصدار 3.0.0
           rm -f package.json package-lock.json
           echo '{
             "name": "timer-app",
-            "version": "2.1.0",
+            "version": "3.0.0",
             "scripts": {
               "tauri": "tauri"
             },
@@ -48,7 +49,7 @@ jobs:
           }' > package.json
           npm install --no-audit --no-fund
 
-      # --- بناء الأندرويد ---
+      # --- إعدادات الأندرويد ---
       - name: setup Android SDK (Android Only)
         if: matrix.platform == 'ubuntu-latest'
         uses: android-actions/setup-android@v3
@@ -74,14 +75,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v2.1.0
+          tagName: v3.0.0
 
-      # --- الرفع مع مسح الملفات القديمة (لضمان النظافة) ---
+      # --- الرفع النهائي لكل المنصات (استبدال القديم) ---
       - name: upload release assets
         uses: softprops/action-gh-release@v2
         if: success()
         with:
-          tag_name: v2.1.0
+          tag_name: v3.0.0
           files: |
             src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
             src-tauri/gen/android/app/build/outputs/apk/release/*.apk
@@ -91,4 +92,4 @@ jobs:
             **/*.exe
           fail_on_unmatched_files: false
           append_body: true
-          overwrite: true # هذا الأمر سيقوم باستبدال أي ملف قديم بنفس الاسم
+          overwrite: true # يضمن مسح أي نسخة قديمة بنفس الاسم في نفس الإصدار
