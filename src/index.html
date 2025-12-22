@@ -1177,6 +1177,78 @@
         .whatsapp-icon {
             color: #25D366;
         }
+        
+        /* WhatsApp Contact Styles */
+        .whatsapp-contact-modal {
+            max-width: 500px !important;
+        }
+        
+        .whatsapp-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .whatsapp-option:hover {
+            background: rgba(37, 211, 102, 0.1);
+            border-color: rgba(37, 211, 102, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .whatsapp-option-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(37, 211, 102, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .whatsapp-option-icon i {
+            color: #25D366;
+            font-size: 20px;
+        }
+        
+        .whatsapp-option-content {
+            flex: 1;
+        }
+        
+        .whatsapp-option-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        
+        .whatsapp-option-description {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        .contact-instructions {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .contact-instructions ol {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .contact-instructions li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -4077,11 +4149,31 @@
         }
         
         // ============================================
-        // DEVELOPER CONTACT FUNCTIONS
+        // ENHANCED DEVELOPER CONTACT FUNCTIONS
         // ============================================
         
-        // Function to contact developer via WhatsApp
+        // Detect platform and app type
+        function detectPlatform() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            const isMobile = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+            const isWindows = /windows|win32|win64/i.test(userAgent);
+            const isMac = /macintosh|mac os x|macintel/i.test(userAgent);
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                          window.navigator.standalone === true;
+            
+            return {
+                isMobile,
+                isWindows,
+                isMac,
+                isPWA,
+                isWeb: !isPWA && !isMobile,
+                userAgent
+            };
+        }
+        
+        // Enhanced function to contact developer via multiple platforms
         function contactDeveloper(developer) {
+            const platform = detectPlatform();
             let phoneNumber = '';
             let developerName = '';
             
@@ -4096,13 +4188,213 @@
                 return;
             }
             
-            // Create WhatsApp link
-            const whatsappLink = `https://wa.me/${phoneNumber.replace('+', '')}`;
+            const message = `Hello ${developerName}, I'm using ProTimer App and would like to contact you.`;
+            const encodedMessage = encodeURIComponent(message);
             
-            // Open WhatsApp in new tab
-            window.open(whatsappLink, '_blank');
+            // Create WhatsApp URL with message
+            const whatsappWebUrl = `https://web.whatsapp.com/send?phone=${phoneNumber.replace('+', '')}&text=${encodedMessage}`;
+            const whatsappMobileUrl = `https://wa.me/${phoneNumber.replace('+', '')}?text=${encodedMessage}`;
             
-            showToast(`Opening WhatsApp to contact ${developerName}`, 'info');
+            // Determine which URL to use based on platform
+            let whatsappUrl = whatsappMobileUrl;
+            
+            if (platform.isMobile) {
+                // For mobile devices (Android, iOS) - use mobile URL
+                whatsappUrl = whatsappMobileUrl;
+            } else if (platform.isWindows || platform.isMac || platform.isWeb) {
+                // For desktop (Windows, Mac) and web - use web URL
+                whatsappUrl = whatsappWebUrl;
+            }
+            
+            // For PWA apps, try both methods
+            if (platform.isPWA) {
+                // Try to open mobile app first, fallback to web
+                const mobileAppOpened = openWhatsAppMobile(phoneNumber, message);
+                if (!mobileAppOpened) {
+                    whatsappUrl = whatsappWebUrl;
+                } else {
+                    return; // Mobile app was opened successfully
+                }
+            }
+            
+            // Show confirmation before opening WhatsApp
+            Swal.fire({
+                title: `Contact ${developerName}`,
+                html: `
+                    <div class="text-left">
+                        <p class="mb-4">You're about to contact <strong>${developerName}</strong> via WhatsApp.</p>
+                        <div class="whatsapp-option" onclick="openWhatsAppDirect('${whatsappUrl}', ${platform.isMobile}, '${developerName}')">
+                            <div class="whatsapp-option-icon">
+                                <i class="fab fa-whatsapp"></i>
+                            </div>
+                            <div class="whatsapp-option-content">
+                                <div class="whatsapp-option-title">Open WhatsApp</div>
+                                <div class="whatsapp-option-description">
+                                    ${platform.isMobile ? 'Open in WhatsApp app' : 'Open in WhatsApp Web'}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="contact-instructions">
+                            <p class="mb-2 font-medium">If WhatsApp doesn't open:</p>
+                            <ol class="text-sm">
+                                <li>Open WhatsApp manually</li>
+                                <li>Send a message to: <strong>${phoneNumber}</strong></li>
+                                <li>Say you're using ProTimer App</li>
+                            </ol>
+                            <button onclick="copyToClipboard('${phoneNumber}')" class="btn-secondary w-full mt-3 text-sm">
+                                <i class="fas fa-copy mr-2"></i> Copy Phone Number
+                            </button>
+                        </div>
+                    </div>
+                `,
+                icon: 'info',
+                background: '#0f172a',
+                color: '#f8fafc',
+                showCancelButton: true,
+                confirmButtonText: 'Open WhatsApp',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#25D366',
+                cancelButtonColor: '#6b7280',
+                customClass: {
+                    popup: 'whatsapp-contact-modal glass-dark'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    openWhatsAppDirect(whatsappUrl, platform.isMobile, developerName);
+                }
+            });
+        }
+        
+        // Try to open WhatsApp mobile app
+        function openWhatsAppMobile(phoneNumber, message) {
+            // Try different URL schemes for WhatsApp
+            const urlSchemes = [
+                `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`,
+                `whatsapp://send?phone=${phoneNumber.replace('+', '')}&text=${encodeURIComponent(message)}`,
+                `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`
+            ];
+            
+            // Create iframe to try opening WhatsApp app
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            
+            let appOpened = false;
+            
+            for (const url of urlSchemes) {
+                try {
+                    iframe.src = url;
+                    // Check if app opened (this is not foolproof but works in most cases)
+                    setTimeout(() => {
+                        // If we're still here after a short time, the app probably didn't open
+                        if (!appOpened) {
+                            iframe.src = '';
+                        }
+                    }, 500);
+                    
+                    // If we get here without error, assume app opened
+                    appOpened = true;
+                    break;
+                } catch (error) {
+                    console.log(`WhatsApp scheme ${url} failed:`, error);
+                    continue;
+                }
+            }
+            
+            // Clean up
+            setTimeout(() => {
+                if (iframe.parentNode) {
+                    iframe.parentNode.removeChild(iframe);
+                }
+            }, 1000);
+            
+            return appOpened;
+        }
+        
+        // Open WhatsApp directly (without confirmation)
+        function openWhatsAppDirect(url, isMobile, developerName) {
+            // Try to open in new tab/window
+            const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+            
+            if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                // Popup blocked or failed, try direct navigation
+                try {
+                    window.location.href = url;
+                } catch (error) {
+                    // Fallback: Show instructions
+                    showWhatsAppInstructions(developerName);
+                }
+            } else {
+                showToast(`Opening WhatsApp to contact ${developerName}`, 'info');
+            }
+        }
+        
+        // Fallback: Show instructions for contacting via WhatsApp
+        function showWhatsAppInstructions(developerName) {
+            const phoneNumbers = {
+                'abdalrahman': '+201065351971',
+                'ahmed': '+201152681848'
+            };
+            
+            const developerKey = developerName.toLowerCase();
+            const phoneNumber = phoneNumbers[developerKey] || '';
+            
+            if (!phoneNumber) {
+                showToast('Could not find contact information', 'error');
+                return;
+            }
+            
+            Swal.fire({
+                title: `Contact ${developerName}`,
+                html: `
+                    <div class="text-left">
+                        <p class="mb-4">To contact ${developerName} via WhatsApp:</p>
+                        <ol class="list-decimal pl-5 mb-4 space-y-2">
+                            <li>Open WhatsApp on your device</li>
+                            <li>Add this number to your contacts: <strong>${phoneNumber}</strong></li>
+                            <li>Send a message saying you're using ProTimer App</li>
+                        </ol>
+                        <p class="text-sm opacity-70">Or copy the number:</p>
+                        <div class="mt-2 p-3 bg-white/10 rounded-lg flex justify-between items-center">
+                            <code class="font-mono">${phoneNumber}</code>
+                            <button onclick="copyToClipboard('${phoneNumber}')" class="btn-secondary px-3 py-1 text-sm">
+                                <i class="fas fa-copy mr-1"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                `,
+                icon: 'info',
+                background: '#0f172a',
+                color: '#f8fafc',
+                confirmButtonText: 'Got it!',
+                confirmButtonColor: '#10b981',
+                customClass: {
+                    popup: 'glass-dark'
+                }
+            });
+        }
+        
+        // Helper function to copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(
+                () => {
+                    showToast('Phone number copied to clipboard!', 'success');
+                },
+                () => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        showToast('Phone number copied to clipboard!', 'success');
+                    } catch (error) {
+                        showToast('Failed to copy phone number', 'error');
+                    }
+                    document.body.removeChild(textArea);
+                }
+            );
         }
         
         // ============================================

@@ -1,4 +1,4 @@
-name: "Android Build Only"
+name: "Final Unified Build v2"
 
 on:
   push:
@@ -6,10 +6,18 @@ on:
       - main
 
 jobs:
-  build-android:
+  publish:
     permissions:
       contents: write
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "macos-latest"
+          - platform: "windows-latest"
+          - platform: "ubuntu-latest"
+
+    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
 
@@ -21,15 +29,15 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android
+          targets: ${{ matrix.platform == 'ubuntu-latest' && 'aarch64-linux-android' || '' }}
 
       - name: fix and install dependencies
+        shell: bash
         run: |
-          # تنظيف الملفات القديمة لضمان عدم حدوث خطأ Invalid Version
           rm -f package.json package-lock.json
           echo '{
             "name": "timer-app",
-            "version": "1.1.0",
+            "version": "2.0.0",
             "scripts": {
               "tauri": "tauri"
             },
@@ -40,29 +48,40 @@ jobs:
           }' > package.json
           npm install --no-audit --no-fund
 
-      - name: setup Android SDK
+      - name: setup Android SDK (Android Only)
+        if: matrix.platform == 'ubuntu-latest'
         uses: android-actions/setup-android@v3
 
-      - name: install NDK
+      - name: install NDK (Android Only)
+        if: matrix.platform == 'ubuntu-latest'
         run: |
           sdkmanager "ndk;26.1.10909125"
           echo "NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
 
-      - name: init android
-        run: echo "y" | npx tauri android init
-
-      - name: build android apk
-        run: npx tauri android build --target aarch64
+      - name: build android (Android Only)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          echo "y" | npx tauri android init
+          npx tauri android build --target aarch64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CC_aarch64_linux_android: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
-          AR_aarch64_linux_android: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
 
-      - name: upload APK
+      - name: build desktop (Win & Mac Only)
+        if: matrix.platform != 'ubuntu-latest'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: upload all assets
         uses: softprops/action-gh-release@v1
         if: success()
         with:
-          tag_name: v1.1.0
-          files: "**/*.apk" # هذا التعديل الأهم: يبحث عن أي ملف APK في أي مكان ويرفعه
+          tag_name: v2.0.0 # هذا سيخلق صفحة جديدة نظيفة تماماً
+          files: |
+            src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
+            src-tauri/gen/android/app/build/outputs/apk/release/*.apk
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/setup.exe
+            **/*.exe
           append_body: true
