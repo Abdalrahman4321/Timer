@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  # المرحلة 1: الأندرويد
+  # 1. مرحلة الأندرويد: تبدأ أولاً وتصلح أخطاء النسخة
   android:
     name: "Step 1: Android Build"
     runs-on: ubuntu-latest
@@ -18,25 +18,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      
       - name: install rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android
-      - name: build and release android
+
+      - name: fix version and build android
         shell: bash
         run: |
+          # إصلاح مشكلة Invalid Version السخيفة برمجياً
+          npm version 1.0.0 --no-git-tag-version || true
           npm install
           npm install -g @tauri-apps/cli
           yes | npx tauri android init || true
           npx tauri android build --debug --target aarch64
-      - name: upload android to release
+
+      - name: upload android
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
-          name: "Official Version v0"
-          files: "src-tauri/gen/android/app/build/outputs/apk/debug/*.apk"
+          name: "Final Version v0"
+          files: "**/build/outputs/apk/debug/*.apk"
+          fail_on_unmatched_files: false
 
-  # المرحلة 2: الماك (تنتظر الأندرويد)
+  # 2. مرحلة الماك: تنتظر نجاح الأندرويد
   macos:
     name: "Step 2: MacOS Build"
     needs: android
@@ -46,17 +52,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: build and release mac
+      - name: build mac
         run: |
+          npm version 1.0.0 --no-git-tag-version || true
           npm install
           npx tauri build
-      - name: upload mac to release
+      - name: upload mac
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
-          files: "src-tauri/target/release/bundle/dmg/*.dmg"
+          files: "**/bundle/dmg/*.dmg"
 
-  # المرحلة 3: الويندوز (تنتظر الماك)
+  # 3. مرحلة الويندوز: تنتظر نجاح الماك
   windows:
     name: "Step 3: Windows Build"
     needs: macos
@@ -66,15 +73,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: build and release windows
+      - name: build windows
         shell: bash
         run: |
+          npm version 1.0.0 --no-git-tag-version || true
           npm install
           npx tauri build
-      - name: upload windows to release
+      - name: upload windows
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
           files: |
-            src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/exe/*.exe
+            **/bundle/msi/*.msi
+            **/bundle/exe/*.exe
