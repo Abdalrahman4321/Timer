@@ -4,78 +4,111 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: # يتيح لك تشغيل الأكشن يدوياً للتجربة
 
 permissions:
   contents: write
 
 jobs:
-  # 1. المرحلة الأولى: الأندرويد فقط
+  # 1. المرحلة الأولى: الأندرويد
   android-job:
     name: "Build Step 1: Android"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: install rust
+          cache: 'npm' # يقوم بعمل كاش للـ dependencies تلقائياً
+
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android
 
-      - name: build android
+      - name: Install Dependencies
         run: |
-          npm install
+          npm ci || npm install # npm ci أسرع وأكثر استقراراً في السيرفرات
+
+      - name: Build Android
+        run: |
           npm install -g @tauri-apps/cli
+          # تفعيل الموافقة التلقائية على التراخيص وتهيئته
           yes | npx tauri android init || true
           npx tauri android build --debug --target aarch64
 
-      - name: release android
+      - name: Release Android
         uses: softprops/action-gh-release@v2
+        if: success()
         with:
           tag_name: v0
           name: "Official Version v0"
-          files: "**/build/outputs/apk/debug/*.apk"
+          files: "src-tauri/gen/android/**/build/outputs/apk/debug/*.apk"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 2. المرحلة الثانية: الماك (تبدأ بعد نجاح الأندرويد)
+  # 2. المرحلة الثانية: الماك
   macos-job:
     name: "Build Step 2: MacOS"
     needs: android-job
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: build mac
-        run: |
-          npm install
-          npx tauri build
-      - name: release mac
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Build MacOS
+        run: npx tauri build
+
+      - name: Release MacOS
         uses: softprops/action-gh-release@v2
+        if: success()
         with:
           tag_name: v0
           files: "src-tauri/target/release/bundle/dmg/*.dmg"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 3. المرحلة الثالثة: الويندوز (تبدأ بعد نجاح الماك)
+  # 3. المرحلة الثالثة: الويندوز
   windows-job:
     name: "Build Step 3: Windows"
     needs: macos-job
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: build windows
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Build Windows
         shell: bash
-        run: |
-          npm install
-          npx tauri build
-      - name: release windows
+        run: npx tauri build
+
+      - name: Release Windows
         uses: softprops/action-gh-release@v2
+        if: success()
         with:
           tag_name: v0
           files: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/exe/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
