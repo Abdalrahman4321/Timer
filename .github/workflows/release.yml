@@ -1,4 +1,4 @@
-name: "Add-Signed-APK-Only"
+name: "Add-APK-Only"
 
 on:
   push:
@@ -27,26 +27,20 @@ jobs:
         with:
           targets: aarch64-linux-android
 
-      - name: Clean and Install
-        run: |
-          npm cache clean --force
-          npm install --no-package-lock
-
       - name: Build Android
         run: |
           npm install -g @tauri-apps/cli
-          # تفعيل تهيئة الأندرويد
+          # تهيئة بيئة الأندرويد إذا لم تكن موجودة
           yes | npx tauri android init || true
-          # بناء نسخة APK (Debug حالياً للتجربة ولكن بمسار صحيح)
+          # بناء APK نسخة Debug لضمان التوقيع الافتراضي الذي يسمح بالتثبيت
           npx tauri android build --debug --target aarch64
 
       - name: Upload APK to Existing Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
-          # تأكدنا من المسار الصحيح للـ APK في Tauri 2
+          # المسار الدقيق لملف الـ APK الناتج
           files: "src-tauri/gen/android/app/build/outputs/apk/debug/*.apk"
-          # الإضافة فقط دون حذف القديم
           append_body: true
           overwrite: false
         env:
