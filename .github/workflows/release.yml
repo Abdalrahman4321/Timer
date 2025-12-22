@@ -1,102 +1,47 @@
-name: "v0-Sequential-Stable"
+name: "Add-Windows-EXE-Only"
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch: # يسمح لك بتشغيل الأكشن يدوياً من صفحة Actions
 
 permissions:
   contents: write
 
 jobs:
-  # 1. مرحلة الأندرويد
-  android-job:
-    name: "Build Step 1: Android"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Clean and Install
-        run: |
-          npm cache clean --force
-          npm install --no-package-lock
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android
-
-      - name: Build Android
-        run: |
-          npm install -g @tauri-apps/cli
-          yes | npx tauri android init || true
-          npx tauri android build --debug --target aarch64
-
-      - name: Release Android (APK)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v0
-          name: "Official Version v0"
-          # البحث عن الـ APK في المسار التلقائي لـ Tauri 2.0
-          files: "src-tauri/gen/android/**/build/outputs/apk/debug/*.apk"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # 2. مرحلة الماك
-  macos-job:
-    name: "Build Step 2: MacOS"
-    needs: android-job
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Install Dependencies
-        run: npm install --no-package-lock
-      - name: Build MacOS
-        run: npx tauri build
-      - name: Release MacOS (DMG)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v0
-          files: "src-tauri/target/release/bundle/dmg/*.dmg"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # 3. مرحلة الويندوز
-  windows-job:
-    name: "Build Step 3: Windows"
-    needs: macos-job
+  build-windows:
+    name: "Build Windows EXE & MSI"
     runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - name: Install Dependencies
-        run: npm install --no-package-lock
+        run: |
+          npm install --no-package-lock
+
       - name: Build Windows
         shell: bash
-        run: npx tauri build
-      - name: Release Windows (EXE & MSI)
+        run: |
+          # هذا الأمر سيقوم بإنشاء ملفات الـ EXE والـ MSI
+          npx tauri build
+
+      - name: Upload to Existing Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
-          # تعديل المسار ليشمل الـ exe والـ msi معاً
+          # هنا حددنا مسارات الـ EXE والـ MSI معاً
           files: |
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/exe/*.exe
+          # هذه الخيارات تضمن عدم حذف الملفات القديمة (APK, DMG)
+          append_body: true
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
