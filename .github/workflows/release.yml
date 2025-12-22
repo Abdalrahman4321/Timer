@@ -1,4 +1,4 @@
-name: "Timer-Android-Signed-Build"
+name: "Timer-Android-Final-Signed"
 
 on:
   push:
@@ -38,32 +38,33 @@ jobs:
         with:
           targets: aarch64-linux-android
 
-      # إنشاء المفتاح في المجلد الرئيسي
+      # إنشاء المفتاح داخل مجلد أندرويد مباشرة لسهولة الوصول
       - name: Generate Keystore
         run: |
-          keytool -genkey -v -keystore timer.keystore -alias timer-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "timer123" -keypass "timer123" -dname "CN=TimerApp, OU=Dev, O=Timer, L=Cairo, S=Cairo, C=EG"
+          mkdir -p src-tauri/gen/android/
+          keytool -genkey -v -keystore src-tauri/gen/android/timer.keystore -alias timer-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "timer123" -keypass "timer123" -dname "CN=TimerApp, OU=Dev, O=Timer, L=Cairo, S=Cairo, C=EG"
 
-      - name: Build Android APK (Signed)
+      - name: Build Android APK
         run: |
           npm install --no-package-lock
           npm install -g @tauri-apps/cli
           export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125
-          yes | npx tauri android init || true
-          # تصحيح الأمر ليتوافق مع Tauri CLI
-          npx tauri android build -- --release
+          # تهيئة الأندرويد والتأكد من وجود المجلدات
+          npx tauri android init
+          # البناء باستخدام الأمر المباشر للـ Release
+          npx tauri android build --release
         env:
-          # المسار الصحيح للوصول للمفتاح من داخل مجلد الأندرويد
-          TAURI_ANDROID_KEYSTORE_PATH: "../../../timer.keystore"
+          # المسار الآن أصبح مباشراً داخل مجلد أندرويد
+          TAURI_ANDROID_KEYSTORE_PATH: "timer.keystore"
           TAURI_ANDROID_KEYSTORE_PASSWORD: "timer123"
           TAURI_ANDROID_KEY_ALIAS: "timer-alias"
           TAURI_ANDROID_KEY_PASSWORD: "timer123"
 
-      - name: Upload APK to Release
+      - name: Upload Signed APK
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.1
           # مسار النسخة الموقعة النهائية
-          files: "src-tauri/gen/android/app/build/outputs/apk/release/**/*.apk"
-          append_body: true
+          files: "src-tauri/gen/android/app/build/outputs/apk/release/*.apk"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
