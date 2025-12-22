@@ -1,4 +1,4 @@
-name: "Final Build v3.0 - Stable"
+name: "Final Build v3.1 - Stable"
 
 on:
   push:
@@ -6,7 +6,6 @@ on:
       - main
 
 jobs:
-  # المرحلة الأولى: بناء كل المنصات وتخزينها مؤقتاً
   build:
     permissions:
       contents: write
@@ -41,7 +40,7 @@ jobs:
           rm -f package.json package-lock.json
           echo '{
             "name": "timer-app",
-            "version": "3.0.0",
+            "version": "3.1.0",
             "scripts": { "tauri": "tauri" },
             "dependencies": {
               "@tauri-apps/api": "latest",
@@ -66,7 +65,6 @@ jobs:
         with:
           uploadArtifacts: false
 
-      # تخزين الملفات الناتجة مؤقتاً لجمعها لاحقاً
       - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -75,10 +73,9 @@ jobs:
             src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/*.exe
             src-tauri/target/release/bundle/setup.exe
-            **/*.exe
 
-  # المرحلة الثانية: جمع كل الملفات ورفعها في Release واحد
   release:
     needs: build
     runs-on: ubuntu-latest
@@ -94,7 +91,9 @@ jobs:
       - name: create final release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v3.0.0
+          tag_name: v3.1.0
+          name: "App v3.1.0 - Stable Build"
           files: all-builds/**/*
-          overwrite: true
-          body: "إصدار شامل للويندوز، الماك، والأندرويد (نسخة الموبايل هي ملف الـ debug.apk)"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
