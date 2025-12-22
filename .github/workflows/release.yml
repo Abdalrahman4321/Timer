@@ -1,4 +1,4 @@
-name: "Android-Full-Setup-And-Build"
+name: "Final-Android-Build"
 
 on:
   push:
@@ -16,7 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Java (LTS)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -25,7 +25,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android NDK
+      - name: Install NDK
         run: sdkmanager "ndk;26.1.10909125"
 
       - name: Setup Node.js
@@ -36,29 +36,22 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android, armv7-linux-androideabi, i686-linux-android, x86_64-linux-android
+          targets: aarch64-linux-android
 
-      - name: Install Dependencies
-        run: npm install --no-package-lock
-
-      - name: Build Android APK
+      - name: Build APK
         run: |
+          npm install --no-package-lock
           npm install -g @tauri-apps/cli
           export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125
-          # تهيئة أندرويد إذا لم يكن مهيأً مسبقاً
-          if [ ! -d "src-tauri/gen/android" ]; then
-            yes | npx tauri android init
-          fi
+          yes | npx tauri android init || true
           npx tauri android build --debug --target aarch64
 
-      - name: Upload APK to Release
+      - name: Add APK to Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
-          # append_body: true تضمن إضافة الكلام للوصف الحالي دون مسحه
-          append_body: true
-          # تضمن عدم حذف الملفات القديمة الموجودة في الريليز
-          overwrite: false
           files: "src-tauri/gen/android/app/build/outputs/apk/debug/*.apk"
+          append_body: true
+          overwrite: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
