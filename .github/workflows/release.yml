@@ -1,4 +1,4 @@
-name: "Final Unified Build v2"
+name: "Final Unified Build v2.1"
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
           rm -f package.json package-lock.json
           echo '{
             "name": "timer-app",
-            "version": "2.0.0",
+            "version": "2.1.0",
             "scripts": {
               "tauri": "tauri"
             },
@@ -48,6 +48,7 @@ jobs:
           }' > package.json
           npm install --no-audit --no-fund
 
+      # --- إعداد وبناء الأندرويد ---
       - name: setup Android SDK (Android Only)
         if: matrix.platform == 'ubuntu-latest'
         uses: android-actions/setup-android@v3
@@ -66,22 +67,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # --- بناء الويندوز والماك ---
       - name: build desktop (Win & Mac Only)
         if: matrix.platform != 'ubuntu-latest'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v2.1.0 # تحديد التاج لضمان الرفع لنفس المكان
 
-      - name: upload all assets
-        uses: softprops/action-gh-release@v1
+      # --- رفع الملفات بشكل ذكي (لحل مشكلة الصورة الأخيرة) ---
+      - name: upload release assets
+        uses: softprops/action-gh-release@v2 # استخدام نسخة أحدث تدعم الرفع المتعدد المستقر
         if: success()
         with:
-          tag_name: v2.0.0 # هذا سيخلق صفحة جديدة نظيفة تماماً
+          tag_name: v2.1.0
           files: |
             src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
             src-tauri/gen/android/app/build/outputs/apk/release/*.apk
             src-tauri/target/release/bundle/msi/*.msi
             src-tauri/target/release/bundle/dmg/*.dmg
             src-tauri/target/release/bundle/setup.exe
-            **/*.exe
+          fail_on_unmatched_files: false
           append_body: true
