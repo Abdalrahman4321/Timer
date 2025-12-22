@@ -12,7 +12,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [windows-latest] # ركزنا على ويندوز لتسريع التجربة الآن
+        # هنا أضفنا macos-latest لبناء نسخة الماك
+        platform: [windows-latest, ubuntu-latest, macos-latest]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -25,18 +26,38 @@ jobs:
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          # نجهز Rust لدعم الموبايل فقط عند العمل على سيرفر Ubuntu
+          targets: ${{ matrix.platform == 'ubuntu-latest' && 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android' || '' }}
 
       - name: install frontend dependencies
-        # أضفنا --no-package-lock لتجنب أخطاء الإصدارات المتعارضة
-        run: npm install --no-package-lock 
+        run: npm install --no-package-lock
 
+      # إعدادات الأندرويد (تظهر فقط في سيرفر Ubuntu)
+      - name: setup Android SDK
+        if: matrix.platform == 'ubuntu-latest'
+        uses: android-actions/setup-android@v3
+
+      - name: install NDK
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sdkmanager "ndk;26.1.10909125"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
+
+      - name: init android on CI
+        if: matrix.platform == 'ubuntu-latest'
+        run: npx tauri android init --yes
+
+      # بناء ورفع الملفات
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          # قمت بتغيير التاج ليكون ثابتًا مؤقتًا لضمان نجاح الرفع
-          tagName: v1.0.0 
+          tagName: v1.0.0
           releaseName: "App v1.0.0"
-          releaseBody: "See the assets below to download the new version."
+          releaseBody: "Now available for Windows, Android, and macOS!"
           releaseDraft: false
           prerelease: false
+          allowUpdates: true
+          # الماك والويندوز سيعملان تلقائياً، الأندرويد يحتاج أمر خاص
+          args: ${{ matrix.platform == 'ubuntu-latest' && '--target android' || '' }}

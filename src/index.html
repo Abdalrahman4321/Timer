@@ -1125,6 +1125,58 @@
             font-family: 'DigitalFont';
             src: local('Arial');
         }
+        
+        /* تصميم أزرار المطورين */
+        .developer-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+        
+        .developer-card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .developer-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+        
+        .developer-role {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-bottom: 10px;
+        }
+        
+        .developer-contact-btn {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(37, 211, 102, 0.2);
+            border: 1px solid rgba(37, 211, 102, 0.3);
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .developer-contact-btn:hover {
+            background: rgba(37, 211, 102, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .whatsapp-icon {
+            color: #25D366;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -1999,7 +2051,7 @@
                                     <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
                                         <i class="fas fa-code"></i> About
                                     </h3>
-                                    <div class="space-y-3">
+                                    <div class="space-y-4">
                                         <div class="flex justify-between">
                                             <span class="opacity-80">Version</span>
                                             <span>2.0.1</span>
@@ -2012,6 +2064,32 @@
                                             <span class="opacity-80">License</span>
                                             <span>MIT</span>
                                         </div>
+                                        
+                                        <!-- قسم المطورين مع روابط الاتصال -->
+                                        <div class="mt-4 pt-4 border-t border-white/10">
+                                            <h4 class="text-lg font-semibold mb-3">Contact Developers</h4>
+                                            
+                                            <!-- مطور: عبدالرحمن -->
+                                            <div class="developer-card">
+                                                <div class="developer-name">Abdalrahman</div>
+                                                <div class="developer-role">Developer</div>
+                                                <button onclick="contactDeveloper('abdalrahman')" class="developer-contact-btn touch-feedback">
+                                                    <i class="fab fa-whatsapp whatsapp-icon"></i>
+                                                    Contact on WhatsApp
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- مطور: أحمد -->
+                                            <div class="developer-card">
+                                                <div class="developer-name">Ahmed</div>
+                                                <div class="developer-role">Developer</div>
+                                                <button onclick="contactDeveloper('ahmed')" class="developer-contact-btn touch-feedback">
+                                                    <i class="fab fa-whatsapp whatsapp-icon"></i>
+                                                    Contact on WhatsApp
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
                                         <div class="pt-4 border-t border-white/10">
                                             <p class="text-sm opacity-60">Professional Timer App with PWA support and advanced features.</p>
                                         </div>
@@ -3996,6 +4074,35 @@
                     showToast('Font deleted successfully', 'success');
                 }
             });
+        }
+        
+        // ============================================
+        // DEVELOPER CONTACT FUNCTIONS
+        // ============================================
+        
+        // Function to contact developer via WhatsApp
+        function contactDeveloper(developer) {
+            let phoneNumber = '';
+            let developerName = '';
+            
+            if (developer === 'abdalrahman') {
+                phoneNumber = '+201065351971';
+                developerName = 'Abdalrahman';
+            } else if (developer === 'ahmed') {
+                phoneNumber = '+201152681848';
+                developerName = 'Ahmed';
+            } else {
+                showToast('Invalid developer selection', 'error');
+                return;
+            }
+            
+            // Create WhatsApp link
+            const whatsappLink = `https://wa.me/${phoneNumber.replace('+', '')}`;
+            
+            // Open WhatsApp in new tab
+            window.open(whatsappLink, '_blank');
+            
+            showToast(`Opening WhatsApp to contact ${developerName}`, 'info');
         }
         
         // ============================================
