@@ -1,19 +1,19 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Timer",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "identifier": "com.abdalrahman.timer",
   "build": {
     "frontendDist": "../src",
-    "beforeBuildCommand": "npm install" 
+    "beforeBuildCommand": ""
   },
   "app": {
     "withGlobalTauri": true,
     "windows": [
       {
         "title": "Timer",
-        "width": 800,
-        "height": 600,
+        "width": 400,
+        "height": 500,
         "resizable": true,
         "fullscreen": false
       }
