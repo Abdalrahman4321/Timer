@@ -1,4 +1,4 @@
-name: "Timer-Android-Universal-Final"
+name: "Timer-Android-Final-Fix"
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17' # أحدث أندرويد بيفضل Java 17
+          java-version: '17'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -36,7 +36,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android, armv7-linux-androideabi
+          targets: aarch64-linux-android
 
       - name: Generate Keystore
         run: |
@@ -49,8 +49,8 @@ jobs:
           export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125
           rm -rf src-tauri/gen/android
           npx tauri android init
-          # بناء نسخة APK موحدة تدعم الموبايلات الحديثة والقديمة
-          npx tauri android build --apk --target aarch64
+          # تصحيح الأمر: إزالة التكرار وتحديد نوع المخرج بشكل صحيح
+          npx tauri android build --target aarch64 --release
         env:
           TAURI_ANDROID_KEYSTORE_PATH: "../../../timer.keystore"
           TAURI_ANDROID_KEYSTORE_PASSWORD: "timer123"
@@ -60,13 +60,13 @@ jobs:
       - name: Prepare Final APK
         run: |
           mkdir -p output
-          # بنبحث عن النسخة الـ signed اللي Tauri وقعها بالمفتاح بتاعنا
-          find src-tauri/gen/android -name "*release-signed.apk" -exec cp {} output/Timer-Final-v1.apk \;
+          # البحث عن النسخة الموقعة التي أنتجها Gradle
+          find src-tauri/gen/android -name "*release-signed.apk" -exec cp {} output/Timer-Final.apk \;
 
       - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.1.0
-          files: output/Timer-Final-v1.apk
+          tag_name: v1.1.1
+          files: output/Timer-Final.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
