@@ -1,4 +1,4 @@
-name: "Publish Release"
+name: "Android Build Only"
 
 on:
   push:
@@ -6,15 +6,10 @@ on:
       - main
 
 jobs:
-  publish-tauri:
+  build-android:
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [windows-latest, ubuntu-latest, macos-latest]
-
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -26,36 +21,35 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'ubuntu-latest' && 'aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android' || '' }}
+          targets: aarch64-linux-android
 
       - name: install frontend dependencies
-        run: npm install --no-package-lock
+        run: npm install
 
       - name: setup Android SDK
-        if: matrix.platform == 'ubuntu-latest'
         uses: android-actions/setup-android@v3
 
       - name: install NDK
-        if: matrix.platform == 'ubuntu-latest'
         run: |
           sdkmanager "ndk;26.1.10909125"
           echo "NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
 
-      - name: init android on CI
-        if: matrix.platform == 'ubuntu-latest'
+      - name: init android
         run: echo "y" | npx tauri android init
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: build android apk
+        run: npx tauri android build --target aarch64-linux-android
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # إضافة المتغيرات دي عشان Rust يشوف الـ NDK Linker صح
-          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: aarch64-linux-android24-clang
-          PATH: ${{ matrix.platform == 'ubuntu-latest' && format('{0}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin:{1}', env.ANDROID_HOME, env.PATH) || env.PATH }}
+          # هذه الإعدادات تخبر Rust باستخدام المترجم الصحيح للأندرويد
+          CC_aarch64_linux_android: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
+          AR_aarch64_linux_android: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+          CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
+
+      - name: upload APK
+        uses: softprops/action-gh-release@v1
+        if: success()
         with:
-          tagName: v1.0.0
-          releaseName: "App v1.0.0"
-          releaseBody: "Windows, macOS, and Android (Experimental) versions."
-          releaseDraft: false
-          prerelease: false
-          allowUpdates: true
-          args: ${{ matrix.platform == 'ubuntu-latest' && '--target aarch64-linux-android' || '' }}
+          tag_name: v1.0.0
+          files: src-tauri/gen/android/app/build/outputs/apk/release/*.apk
+          append_body: true
