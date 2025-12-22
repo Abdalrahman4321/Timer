@@ -26,7 +26,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Android NDK
-        run: sdkmanager "ndk;26.1.10909125" # نسخة مستقرة لـ Tauri
+        run: sdkmanager "ndk;26.1.10909125"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -44,17 +44,21 @@ jobs:
       - name: Build Android APK
         run: |
           npm install -g @tauri-apps/cli
-          # إعداد متغيرات البيئة للـ NDK
           export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125
-          yes | npx tauri android init || true
+          # تهيئة أندرويد إذا لم يكن مهيأً مسبقاً
+          if [ ! -d "src-tauri/gen/android" ]; then
+            yes | npx tauri android init
+          fi
           npx tauri android build --debug --target aarch64
 
       - name: Upload APK to Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
-          files: "src-tauri/gen/android/app/build/outputs/apk/debug/*.apk"
+          # append_body: true تضمن إضافة الكلام للوصف الحالي دون مسحه
           append_body: true
+          # تضمن عدم حذف الملفات القديمة الموجودة في الريليز
           overwrite: false
+          files: "src-tauri/gen/android/app/build/outputs/apk/debug/*.apk"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
