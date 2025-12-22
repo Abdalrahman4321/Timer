@@ -24,7 +24,10 @@ jobs:
           targets: aarch64-linux-android
 
       - name: install frontend dependencies
-        run: npm install
+        run: |
+          # تصحيح رقم الإصدار تلقائياً لتجنب خطأ Invalid Version
+          npm version 1.0.0 --no-git-tag-version || true
+          npm install --no-audit --no-fund
 
       - name: setup Android SDK
         uses: android-actions/setup-android@v3
@@ -41,7 +44,6 @@ jobs:
         run: npx tauri android build --target aarch64-linux-android
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # هذه الإعدادات تخبر Rust باستخدام المترجم الصحيح للأندرويد
           CC_aarch64_linux_android: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
           AR_aarch64_linux_android: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
           CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
