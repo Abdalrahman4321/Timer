@@ -1,4 +1,4 @@
-name: "Final Unified Build v3.2"
+name: "Final Master Build v3.3"
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
 
 jobs:
   build:
+    name: Build for ${{ matrix.os }}
     permissions:
       contents: write
     strategy:
@@ -34,26 +35,18 @@ jobs:
         with:
           targets: ${{ matrix.os == 'android' && 'aarch64-linux-android' || '' }}
 
-      - name: fix and install dependencies
+      - name: sync version and install
         shell: bash
         run: |
-          rm -f package.json package-lock.json
-          echo '{
-            "name": "timer-app",
-            "version": "3.2.0",
-            "scripts": { "tauri": "tauri" },
-            "dependencies": {
-              "@tauri-apps/api": "latest",
-              "@tauri-apps/cli": "latest"
-            }
-          }' > package.json
+          # تحديث الإصدار برمجياً لضمان التطابق
+          npm version 3.3.0 --no-git-tag-version || true
           npm install
 
       - name: build android
         if: matrix.os == 'android'
         run: |
           echo "y" | npx tauri android init
-          npx tauri android build --target aarch64
+          npx tauri android build --debug --target aarch64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -65,38 +58,46 @@ jobs:
         with:
           uploadArtifacts: false
 
-      # تخزين الملفات بأسلوب البحث الشامل لضمان التقاط الـ APK والـ EXE
-      - name: upload artifacts
+      # حل مشكلة ضياع الملفات: تجميع كل المخرجات في مجلد واحد مؤقت
+      - name: collect assets
+        shell: bash
+        run: |
+          mkdir -p final-artifacts
+          find . -name "*.apk" -exec cp {} final-artifacts/ \;
+          find . -name "*.msi" -exec cp {} final-artifacts/ \;
+          find . -name "*.dmg" -exec cp {} final-artifacts/ \;
+          find . -name "*.exe" -exec cp {} final-artifacts/ \;
+          # التأكد من وجود ملفات قبل الرفع
+          ls -R final-artifacts/
+
+      - name: upload temporary artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-outputs-${{ matrix.os }}
-          path: |
-            **/*.apk
-            **/*.msi
-            **/*.dmg
-            **/*.exe
+          name: assets-${{ matrix.os }}
+          path: final-artifacts/
+          if-no-files-found: error
 
-  release:
+  publish:
+    name: Final Release Creation
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    permissions: contents: write
     steps:
-      - name: download all artifacts
+      - name: download all assets
         uses: actions/download-artifact@v4
         with:
-          path: all-builds
+          path: final-release-assets
           merge-multiple: true
 
-      - name: create final release
+      - name: create master release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v3.2.0
-          name: "App v3.2.0 - All Platforms"
-          files: |
-            all-builds/**/*.apk
-            all-builds/**/*.msi
-            all-builds/**/*.dmg
-            all-builds/**/*.exe
+          tag_name: v3.3.0
+          name: "App v3.3.0 - Unified Final Build"
+          files: final-release-assets/*
           overwrite: true
-          body: "الآن النسخة تشمل الويندوز والماك والموبايل (استخدم الـ debug apk للموبايل)."
+          body: |
+            ### الإصدار الشامل لجميع المنصات
+            - **Android**: حمل ملف الـ `debug.apk` للتثبيت الفوري.
+            - **Windows**: استخدم ملف الـ `.msi` أو `.exe`.
+            - **macOS**: استخدم ملف الـ `.dmg`.
