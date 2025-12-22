@@ -1,4 +1,4 @@
-name: "ProTimer Final Master v6"
+name: "ProTimer Ultimate v7"
 
 on:
   push:
@@ -33,17 +33,19 @@ jobs:
         with:
           targets: ${{ matrix.os == 'android' && 'aarch64-linux-android' || '' }}
 
-      # حل مشكلة الصورة الأخيرة: استخدام أوامر تناسب الويندوز واللينكس والماك
-      - name: clean and install
+      # إصلاح مشكلة الصورة 7:08 AM: استخدام طريقة تنظيف متوافقة مع الويندوز واللينكس
+      - name: clean and repair environment
         shell: bash
         run: |
-          npm version 6.0.0 --no-git-tag-version || true
-          npm install
           npm install -g @tauri-apps/cli
+          npm install
+          # تحديث الإصدار لضمان عدم حدوث تصادم
+          npm version 7.0.0 --no-git-tag-version || true
 
       - name: build android
         if: matrix.os == 'android'
         run: |
+          # القضاء على مشكلة "التوقف لانتظار الرد" في الأندرويد
           yes | npx tauri android init || true
           npx tauri android build --debug --target aarch64
         env:
@@ -56,27 +58,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # تجميع الملفات بذكاء (Search & Collect)
+      # تجميع الملفات باستخدام "البحث العميق" لضمان عدم ضياع أي APK أو EXE
       - name: collect assets
         shell: bash
         run: |
           mkdir -p final_assets
-          # البحث في كل مكان عن المخرجات ونسخها للفولدر النهائي
           find . -name "*.apk" -exec cp {} final_assets/ \; || true
           find . -name "*.msi" -exec cp {} final_assets/ \; || true
           find . -name "*.dmg" -exec cp {} final_assets/ \; || true
           find . -name "*.exe" -exec cp {} final_assets/ \; || true
-          echo "Current collected assets:"
+          echo "Assets found:"
           ls final_assets/
 
-      - name: upload artifacts
+      - name: upload temporary artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.os }}
           path: final_assets/
 
   publish:
-    name: Deployment
+    name: Final Deployment
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -88,15 +89,15 @@ jobs:
           path: release-folder
           merge-multiple: true
 
-      - name: create v6.0.0 release
+      - name: create final v7 release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v6.0.0
-          name: "Timer App v6.0.0 - Unified Stable"
+          tag_name: v7.0.0
+          name: "Timer App v7.0.0 - Official Stable"
           files: release-folder/*
           overwrite: true
           body: |
-            ### الإصدار النهائي المستقر v6.0.0
-            - Android: (debug.apk)
-            - Windows: (.exe / .msi)
-            - macOS: (.dmg)
+            ### الإصدار النهائي المستقر (v7.0.0)
+            - **Android:** حمل ملف الـ `debug.apk`.
+            - **Windows:** ملفات الـ `.exe` و `.msi`.
+            - **macOS:** ملف الـ `.dmg`.
