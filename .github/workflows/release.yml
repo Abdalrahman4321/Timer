@@ -50,8 +50,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
-          files: "src-tauri/gen/android/app/build/outputs/apk/debug/*.apk"
+          # تم تصحيح المسار ليكون أكثر شمولاً لضمان إيجاد الملف
+          files: "src-tauri/gen/android/**/build/outputs/apk/debug/*.apk"
           append_body: true
-          overwrite: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
