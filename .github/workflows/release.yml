@@ -4,14 +4,14 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # يسمح لك بتشغيل الأكشن يدوياً من صفحة Actions
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build-windows:
-    name: "Build Windows EXE & MSI"
+  build-windows-exe:
+    name: "Build Windows EXE"
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -23,25 +23,22 @@ jobs:
           node-version: 20
 
       - name: Install Dependencies
-        run: |
-          npm install --no-package-lock
+        run: npm install --no-package-lock
 
       - name: Build Windows
         shell: bash
-        run: |
-          # هذا الأمر سيقوم بإنشاء ملفات الـ EXE والـ MSI
-          npx tauri build
+        run: npx tauri build
 
-      - name: Upload to Existing Release
+      - name: Upload EXE to Existing Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
-          # هنا حددنا مسارات الـ EXE والـ MSI معاً
+          # هذا المسار سيلتقط ملف الـ EXE الناتج عن NSIS والـ MSI أيضاً
           files: |
+            src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/exe/*.exe
-          # هذه الخيارات تضمن عدم حذف الملفات القديمة (APK, DMG)
+          # الخيارات التالية تضمن الإضافة فقط دون مسح الملفات القديمة
           append_body: true
-          make_latest: true
+          overwrite: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
