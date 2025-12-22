@@ -1,4 +1,4 @@
-name: "Add-APK-Only"
+name: "Android-Full-Setup-And-Build"
 
 on:
   push:
@@ -11,11 +11,22 @@ permissions:
 
 jobs:
   build-android:
-    name: "Build Android APK"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Java (LTS)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: sdkmanager "ndk;26.1.10909125" # نسخة مستقرة لـ Tauri
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -25,21 +36,23 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android
+          targets: aarch64-linux-android, armv7-linux-androideabi, i686-linux-android, x86_64-linux-android
 
-      - name: Build Android
+      - name: Install Dependencies
+        run: npm install --no-package-lock
+
+      - name: Build Android APK
         run: |
           npm install -g @tauri-apps/cli
-          # تهيئة بيئة الأندرويد إذا لم تكن موجودة
+          # إعداد متغيرات البيئة للـ NDK
+          export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125
           yes | npx tauri android init || true
-          # بناء APK نسخة Debug لضمان التوقيع الافتراضي الذي يسمح بالتثبيت
           npx tauri android build --debug --target aarch64
 
-      - name: Upload APK to Existing Release
+      - name: Upload APK to Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v0
-          # المسار الدقيق لملف الـ APK الناتج
           files: "src-tauri/gen/android/app/build/outputs/apk/debug/*.apk"
           append_body: true
           overwrite: false
