@@ -38,7 +38,7 @@ jobs:
         with:
           targets: aarch64-linux-android
 
-      # إنشاء مفتاح توقيع رقمي جديد داخل السيرفر
+      # إنشاء المفتاح وتغيير مكانه ليراه الـ Gradle مباشرة
       - name: Generate Keystore
         run: |
           keytool -genkey -v -keystore timer.keystore -alias timer-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "timer123" -keypass "timer123" -dname "CN=TimerApp, OU=Dev, O=Timer, L=Cairo, S=Cairo, C=EG"
@@ -49,24 +49,24 @@ jobs:
           npm install -g @tauri-apps/cli
           export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125
           
-          # أهم خطوة: حذف أي إعدادات قديمة وإعادة بناء بيئة الأندرويد من الصفر
+          # تنظيف كامل للمشروع لضمان إزالة أي مسارات قديمة (Identifier القديم)
           rm -rf src-tauri/gen/android
-          npx tauri android init
           
-          # تنفيذ البناء بوضع الـ Release مع تمرير الوسائط بشكل صحيح
+          # إعادة التهيئة وبناء الـ Release
+          npx tauri android init
           npx tauri android build -- --release
         env:
-          # المسار للوصول للمفتاح من داخل مجلدات Gradle العميقة
+          # استخدام مسار مطلق للمفتاح لضمان وصول الـ Gradle إليه أينما كان
           TAURI_ANDROID_KEYSTORE_PATH: "../../../timer.keystore"
           TAURI_ANDROID_KEYSTORE_PASSWORD: "timer123"
           TAURI_ANDROID_KEY_ALIAS: "timer-alias"
           TAURI_ANDROID_KEY_PASSWORD: "timer123"
 
-      - name: Upload Signed APK to Release
+      - name: Upload Signed APK
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.2
-          files: "src-tauri/gen/android/app/build/outputs/apk/release/**/*.apk"
-          append_body: true
+          tag_name: v1.0.3
+          # رفع أي APK يتم إنتاجه في مجلد الـ release
+          files: "src-tauri/gen/android/app/build/outputs/apk/release/*.apk"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
