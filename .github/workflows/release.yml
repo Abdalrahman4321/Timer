@@ -1,4 +1,4 @@
-name: "Sequential-Final-Build"
+name: "v0-Sequential-Master"
 
 on:
   push:
@@ -9,79 +9,72 @@ permissions:
   contents: write
 
 jobs:
-  # 1. المرحلة الأولى: الأندرويد فقط
-  build-android:
-    name: Step 1 - Android Build
+  # المرحلة 1: الأندرويد
+  android:
+    name: "Step 1: Android Build"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: install Rust
+      - name: install rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android
-      
-      - name: build android
+      - name: build and release android
+        shell: bash
         run: |
           npm install
           npm install -g @tauri-apps/cli
-          # البحث عن مكان المشروع والدخول إليه
-          cd $(find . -name "package.json" -exec dirname {} \;)
           yes | npx tauri android init || true
           npx tauri android build --debug --target aarch64
-      
-      - name: release android
+      - name: upload android to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v-final
-          name: "Timer App - Final"
-          files: "**/bundle/android/*.apk"
+          tag_name: v0
+          name: "Official Version v0"
+          files: "src-tauri/gen/android/app/build/outputs/apk/debug/*.apk"
 
-  # 2. المرحلة الثانية: الماك (تبدأ بعد نجاح الأندرويد)
-  build-macos:
-    name: Step 2 - MacOS Build
-    needs: build-android
+  # المرحلة 2: الماك (تنتظر الأندرويد)
+  macos:
+    name: "Step 2: MacOS Build"
+    needs: android
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      
-      - name: build mac
+      - name: build and release mac
         run: |
           npm install
           npx tauri build
-      
-      - name: release mac
+      - name: upload mac to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v-final
-          files: "**/bundle/dmg/*.dmg"
+          tag_name: v0
+          files: "src-tauri/target/release/bundle/dmg/*.dmg"
 
-  # 3. المرحلة الثالثة: الويندوز (تبدأ بعد نجاح الماك)
-  build-windows:
-    name: Step 3 - Windows Build
-    needs: build-macos
+  # المرحلة 3: الويندوز (تنتظر الماك)
+  windows:
+    name: "Step 3: Windows Build"
+    needs: macos
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      
-      - name: build windows
+      - name: build and release windows
         shell: bash
         run: |
           npm install
           npx tauri build
-      
-      - name: release windows
+      - name: upload windows to release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v-final
+          tag_name: v0
           files: |
-            **/bundle/msi/*.msi
-            **/bundle/exe/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/exe/*.exe
