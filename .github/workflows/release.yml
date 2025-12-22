@@ -25,9 +25,9 @@ jobs:
 
       - name: install frontend dependencies
         run: |
-          # اجبار اصدار نظيف بدون حرف v وبدون اخطاء
-          npm pkg set version='1.0.0'
-          npm install --no-audit --no-fund
+          # حذف اي اعدادات اصدار تالفة وفرض اصدار جديد
+          sed -i 's/"version": ".*"/"version": "1.0.0"/' package.json
+          npm install --no-audit --no-fund --legacy-peer-deps
 
       - name: setup Android SDK
         uses: android-actions/setup-android@v3
