@@ -25,8 +25,8 @@ jobs:
 
       - name: install frontend dependencies
         run: |
-          npm install -g npm@latest
-          npm version 1.0.0 --no-git-tag-version --allow-same-version || true
+          # اجبار اصدار نظيف بدون حرف v وبدون اخطاء
+          npm pkg set version='1.0.0'
           npm install --no-audit --no-fund
 
       - name: setup Android SDK
