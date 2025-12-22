@@ -1,4 +1,4 @@
-name: "Final Build v3.1 - Stable"
+name: "Final Unified Build v3.2"
 
 on:
   push:
@@ -40,14 +40,14 @@ jobs:
           rm -f package.json package-lock.json
           echo '{
             "name": "timer-app",
-            "version": "3.1.0",
+            "version": "3.2.0",
             "scripts": { "tauri": "tauri" },
             "dependencies": {
               "@tauri-apps/api": "latest",
               "@tauri-apps/cli": "latest"
             }
           }' > package.json
-          npm install --no-audit --no-fund
+          npm install
 
       - name: build android
         if: matrix.os == 'android'
@@ -65,16 +65,16 @@ jobs:
         with:
           uploadArtifacts: false
 
+      # تخزين الملفات بأسلوب البحث الشامل لضمان التقاط الـ APK والـ EXE
       - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-outputs-${{ matrix.os }}
           path: |
-            src-tauri/gen/android/app/build/outputs/apk/debug/*.apk
-            src-tauri/target/release/bundle/msi/*.msi
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/*.exe
-            src-tauri/target/release/bundle/setup.exe
+            **/*.apk
+            **/*.msi
+            **/*.dmg
+            **/*.exe
 
   release:
     needs: build
@@ -91,9 +91,12 @@ jobs:
       - name: create final release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v3.1.0
-          name: "App v3.1.0 - Stable Build"
-          files: all-builds/**/*
-          draft: false
-          prerelease: false
-          generate_release_notes: true
+          tag_name: v3.2.0
+          name: "App v3.2.0 - All Platforms"
+          files: |
+            all-builds/**/*.apk
+            all-builds/**/*.msi
+            all-builds/**/*.dmg
+            all-builds/**/*.exe
+          overwrite: true
+          body: "الآن النسخة تشمل الويندوز والماك والموبايل (استخدم الـ debug apk للموبايل)."
