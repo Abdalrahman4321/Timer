@@ -3221,9 +3221,6 @@ function updateTotalSeconds() {
     APP_STATE.totalSeconds = calculateTotalSeconds();
     APP_STATE.remainingSeconds = APP_STATE.totalSeconds;
 }
-
-
-
 // إضافة دقائق (لكل الأزرار)
 function addMinutes(minutes) {
     if (APP_STATE.isRunning || APP_STATE.isFinished) {
@@ -3586,7 +3583,6 @@ function calculateStorageSize() {
         return { bytes: 0, mb: 0, presets: 0, fonts: 0, tasks: 0, notifications: 0 };
     }
 }
-
 // عرض التخزين
 function updateStorageDisplay() {
     if (!elements.storageUsedValue) return;
@@ -8020,24 +8016,2832 @@ function setManualTime(timeString) {
     let globalLock = false; // منع تكرار الأحداث على العناصر نفسها
 
 })();
+// ============================================
+// KEYBOARD SHORTCUTS - ONE KEY PER ACTION
+// ============================================
 
+document.addEventListener('keydown', function(e) {
+    // متسمعش لما المستخدم بيطبع في حقل
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        return;
+    }
+    
+    const key = e.key.toLowerCase();
+    const keyCode = e.code;
+    
+    // === SPACE (تشغيل/إيقاف) ===
+    if (key === ' ' || keyCode === 'Space') {
+        e.preventDefault();
+        toggleTimer();
+        return;
+    }
+    
+    // === R (إعادة تعيين) ===
+    if (keyCode === 'KeyR' || key === 'r') {
+        e.preventDefault();
+        confirmReset();
+        return;
+    }
+    
+    // === + (إضافة دقيقة) ===
+    if (key === '+' || key === '=' || keyCode === 'Equal' || keyCode === 'NumpadAdd') {
+        e.preventDefault();
+        addMinutes(1);
+        return;
+    }
+    
+    // === - (طرح دقيقة) ===
+    if (key === '-' || key === '_' || keyCode === 'Minus' || keyCode === 'NumpadSubtract') {
+        e.preventDefault();
+        addMinutes(-1);
+        return;
+    }
+    
+    // === H (المساعدة) ===
+    if (keyCode === 'KeyH' || key === 'h') {
+        e.preventDefault();
+        toggleShortcutsHelp();
+        return;
+    }
+    
+    // === F (وضع التركيز) ===
+    if (keyCode === 'KeyF' || key === 'f') {
+        e.preventDefault();
+        toggleFocusMode();
+        return;
+    }
+    
+    // === T (المهام) ===
+    if (keyCode === 'KeyT' || key === 't') {
+        e.preventDefault();
+        toggleQuickTasks();
+        return;
+    }
+    
+    // === P (تشغيل/إيقاف بديل) ===
+    if (keyCode === 'KeyP' || key === 'p') {
+        e.preventDefault();
+        toggleTimer();
+        return;
+    }
+    
+    // === A (إضافة دقيقة بديل) ===
+    if (keyCode === 'KeyA' || key === 'a') {
+        e.preventDefault();
+        addMinutes(1);
+        return;
+    }
+    
+    // === S (طرح دقيقة بديل) ===
+    if (keyCode === 'KeyS' || key === 's') {
+        if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            addMinutes(-1);
+        }
+        return;
+    }
+    
+    // === D (المطورين) ===
+    if (keyCode === 'KeyD' || key === 'd') {
+        e.preventDefault();
+        if (elements.settingsPanel) {
+            toggleSettings();
+            setTimeout(() => {
+                switchTab('advanced');
+            }, 300);
+        }
+        return;
+    }
+    
+    // === M (الوسائط) ===
+    if (keyCode === 'KeyM' || key === 'm') {
+        e.preventDefault();
+        if (elements.settingsPanel) {
+            toggleSettings();
+            setTimeout(() => {
+                switchTab('media');
+            }, 300);
+        }
+        return;
+    }
+    
+    // === N (الإشعارات) ===
+    if (keyCode === 'KeyN' || key === 'n') {
+        e.preventDefault();
+        if (elements.settingsPanel) {
+            toggleSettings();
+            setTimeout(() => {
+                switchTab('notifications');
+            }, 300);
+        }
+        return;
+    }
+    
+    // === Z (التخزين) ===
+    if (keyCode === 'KeyZ' || key === 'z') {
+        e.preventDefault();
+        if (elements.settingsPanel) {
+            toggleSettings();
+            setTimeout(() => {
+                switchTab('storage');
+            }, 300);
+        }
+        return;
+    }
+    
+    // === C (الألوان) ===
+    if (keyCode === 'KeyC' || key === 'c') {
+        if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            if (elements.settingsPanel) {
+                toggleSettings();
+                setTimeout(() => {
+                    switchTab('appearance');
+                }, 300);
+            }
+        }
+        return;
+    }
+    
+    // === L (قفل الشاشة) ===
+    if (keyCode === 'KeyL' || key === 'l') {
+        e.preventDefault();
+        if (elements.wakeLockToggle) {
+            toggleWakeLock();
+        }
+        return;
+    }
+    
+    // === V (الاهتزاز) ===
+    if (keyCode === 'KeyV' || key === 'v') {
+        e.preventDefault();
+        if (elements.vibrateToggle) {
+            toggleVibrate();
+        }
+        return;
+    }
+    
+    // === ESC (إغلاق النوافذ) ===
+    if (key === 'escape' || key === 'esc' || keyCode === 'Escape') {
+        e.preventDefault();
+        
+        if (elements.settingsPanel && !elements.settingsPanel.classList.contains('translate-x-full')) {
+            toggleSettings();
+        }
+        
+        if (elements.quickTasksPanel && elements.quickTasksPanel.classList.contains('show')) {
+            toggleQuickTasks();
+        }
+        
+        if (elements.keyboardInputOverlay && !elements.keyboardInputOverlay.classList.contains('hidden')) {
+            closeKeyboardInput();
+        }
+        
+        return;
+    }
+    
+    // === F11 (ملء الشاشة) ===
+    if (key === 'f11' || keyCode === 'F11') {
+        e.preventDefault();
+        toggleFullscreen();
+        return;
+    }
+    
+    // === : (الإدخال اليدوي) ===
+    if (key === ':' || key === ';' || keyCode === 'Semicolon' || keyCode === 'Colon') {
+        e.preventDefault();
+        openKeyboardInput('hours');
+        return;
+    }
+    
+    // === الأرقام 1-9 (ضبط سريع) ===
+    if (keyCode.includes('Digit') || keyCode.includes('Numpad')) {
+        e.preventDefault();
+        
+        let minutes = 0;
+        
+        if (keyCode.includes('Digit')) {
+            minutes = parseInt(keyCode.replace('Digit', ''));
+        } else if (keyCode.includes('Numpad')) {
+            minutes = parseInt(keyCode.replace('Numpad', ''));
+        }
+        
+        if (minutes > 0 && minutes <= 9) {
+            setQuickPreset(minutes);
+        }
+        return;
+    }
+    
+    // === الأرقام من لوحة المفاتيح ===
+    if (key >= '1' && key <= '9') {
+        e.preventDefault();
+        const minutes = parseInt(key);
+        if (minutes > 0) {
+            setQuickPreset(minutes);
+        }
+        return;
+    }
+    
+    // === Ctrl+S (حفظ) ===
+    if ((e.ctrlKey || e.metaKey) && (keyCode === 'KeyS' || key === 's')) {
+        e.preventDefault();
+        savePreset();
+        return;
+    }
+    
+    // === Ctrl+O (فتح الإعدادات) ===
+    if ((e.ctrlKey || e.metaKey) && (keyCode === 'KeyO' || key === 'o')) {
+        e.preventDefault();
+        toggleSettings();
+        return;
+    }
+    
+    // === Ctrl+I (الإدخال اليدوي) ===
+    if ((e.ctrlKey || e.metaKey) && (keyCode === 'KeyI' || key === 'i')) {
+        e.preventDefault();
+        openKeyboardInput('hours');
+        return;
+    }
+});
 
+// ============================================
+// اختصارات Ctrl + رقم لأوقات أطول
+// ============================================
 
+document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    
+    if (e.ctrlKey || e.metaKey) {
+        const key = e.key;
+        const keyCode = e.code;
+        
+        // Ctrl+1 = 10 دقائق
+        if (key === '1' || keyCode === 'Digit1' || keyCode === 'Numpad1') {
+            e.preventDefault();
+            setQuickPreset(10);
+            return;
+        }
+        
+        // Ctrl+2 = 15 دقائق
+        if (key === '2' || keyCode === 'Digit2' || keyCode === 'Numpad2') {
+            e.preventDefault();
+            setQuickPreset(15);
+            return;
+        }
+        
+        // Ctrl+3 = 30 دقائق
+        if (key === '3' || keyCode === 'Digit3' || keyCode === 'Numpad3') {
+            e.preventDefault();
+            setQuickPreset(30);
+            return;
+        }
+        
+        // Ctrl+4 = 60 دقيقة
+        if (key === '4' || keyCode === 'Digit4' || keyCode === 'Numpad4') {
+            e.preventDefault();
+            setQuickPreset(60);
+            return;
+        }
+        
+        // Ctrl+5 = 90 دقيقة
+        if (key === '5' || keyCode === 'Digit5' || keyCode === 'Numpad5') {
+            e.preventDefault();
+            setQuickPreset(90);
+            return;
+        }
+        
+        // Ctrl+6 = 120 دقيقة
+        if (key === '6' || keyCode === 'Digit6' || keyCode === 'Numpad6') {
+            e.preventDefault();
+            setQuickPreset(120);
+            return;
+        }
+    }
+});
+// ============================================
+// SYSTEM TIME UPDATER
+// ============================================
 
+function updateCurrentTime() {
+    if (!elements.currentTime) return;
+    
+    const now = new Date();
+    
+    // الصيغة 12 ساعة مع AM/PM
+    let hours = now.getHours();
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    // تحويل لـ 12 ساعة
+    hours = hours % 12;
+    hours = hours ? hours : 12; // الساعة 0 تصبح 12
+    
+    const timeString = `${hours}:${minutes}:${seconds} ${ampm}`;
+    elements.currentTime.textContent = timeString;
+}
 
+// تحديث الوقت كل ثانية
+setInterval(updateCurrentTime, 1000);
 
+// تحديث مباشر عند التحميل
+updateCurrentTime();
 
+// إذا دالة updateMediaPreview مش موجودة
+if (typeof window.updateMediaPreview === 'undefined') {
+    window.updateMediaPreview = function() {
+        if (APP_STATE.settings.mediaUrl) {
+            if (APP_STATE.settings.mediaType === 'video') {
+                elements.mediaPreview.innerHTML = `
+                    <video class="w-full h-full object-cover rounded-lg" controls muted>
+                        <source src="${APP_STATE.settings.mediaUrl}" type="video/mp4">
+                    </video>
+                `;
+            } else {
+                elements.mediaPreview.innerHTML = `
+                    <img src="${APP_STATE.settings.mediaUrl}" alt="Preview" class="w-full h-full object-cover rounded-lg">
+                `;
+            }
+        } else {
+            elements.mediaPreview.innerHTML = `
+                <div class="text-center p-4">
+                    <i class="fas fa-image text-4xl opacity-30 mb-2"></i>
+                    <p class="opacity-50">لم يتم اختيار وسائط</p>
+                </div>
+            `;
+        }
+    };
+}
+// ============================================
+// COMPLETE SAVING SYSTEM - SAVE EVERYTHING
+// ============================================
 
+// دالة حفظ كاملة
+function saveAllSettings() {
+    try {
+        const saveData = {
+            // حالة التايمر
+            timerState: {
+                hours: APP_STATE.hours,
+                minutes: APP_STATE.minutes,
+                seconds: APP_STATE.seconds,
+                originalHours: APP_STATE.originalHours,
+                originalMinutes: APP_STATE.originalMinutes,
+                originalSeconds: APP_STATE.originalSeconds,
+                totalSeconds: APP_STATE.totalSeconds,
+                remainingSeconds: APP_STATE.remainingSeconds,
+                isRunning: APP_STATE.isRunning,
+                isPaused: APP_STATE.isPaused,
+                isFinished: APP_STATE.isFinished
+            },
+            
+            // كل الإعدادات
+            settings: APP_STATE.settings,
+            
+            // الفيديوهات والصور (بمعلوماتها)
+            mediaData: {
+                mediaUrl: APP_STATE.settings.mediaUrl,
+                mediaType: APP_STATE.settings.mediaType,
+                mediaEnabled: APP_STATE.settings.mediaEnabled
+            },
+            
+            // المهام
+            tasks: APP_STATE.tasks,
+            
+            // البريسيتات
+            presets: APP_STATE.presets,
+            
+            // الخطوط
+            uploadedFonts: APP_STATE.uploadedFonts,
+            currentFont: APP_STATE.currentFont,
+            
+            // تاريخ الإشعارات
+            notificationHistory: APP_STATE.notificationHistory,
+            
+            // حالات خاصة
+            focusMode: APP_STATE.focusMode,
+            audioEnabled: APP_STATE.audioEnabled,
+            
+            // معلومات النسخة
+            version: '2.2.0',
+            lastSave: new Date().toISOString()
+        };
+        
+        // تحويل لـ JSON
+        const jsonData = JSON.stringify(saveData);
+        
+        // حفظ في localStorage
+        localStorage.setItem('proTimerCompleteData', jsonData);
+        
+        console.log('✅ All settings saved successfully');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Save error:', error);
+        showToast('خطأ في الحفظ، تأكد من المساحة', 'error');
+        return false;
+    }
+}
 
+// دالة تحميل كاملة
+function loadAllSettings() {
+    try {
+        const saved = localStorage.getItem('proTimerCompleteData');
+        if (!saved) {
+            console.log('No saved data found');
+            return false;
+        }
+        
+        const data = JSON.parse(saved);
+        
+        // حالة التايمر
+        if (data.timerState) {
+            APP_STATE.hours = data.timerState.hours || 0;
+            APP_STATE.minutes = data.timerState.minutes || 10;
+            APP_STATE.seconds = data.timerState.seconds || 0;
+            APP_STATE.originalHours = data.timerState.originalHours || APP_STATE.hours;
+            APP_STATE.originalMinutes = data.timerState.originalMinutes || APP_STATE.minutes;
+            APP_STATE.originalSeconds = data.timerState.originalSeconds || APP_STATE.seconds;
+            APP_STATE.totalSeconds = data.timerState.totalSeconds || calculateTotalSeconds();
+            APP_STATE.remainingSeconds = data.timerState.remainingSeconds || APP_STATE.totalSeconds;
+            APP_STATE.isRunning = data.timerState.isRunning || false;
+            APP_STATE.isPaused = data.timerState.isPaused || false;
+            APP_STATE.isFinished = data.timerState.isFinished || false;
+        }
+        
+        // الإعدادات
+        if (data.settings) {
+            APP_STATE.settings = { ...APP_STATE.settings, ...data.settings };
+        }
+        
+        // المهام
+        if (data.tasks) {
+            APP_STATE.tasks = data.tasks;
+        }
+        
+        // البريسيتات
+        if (data.presets) {
+            APP_STATE.presets = data.presets;
+        }
+        
+        // الخطوط
+        if (data.uploadedFonts) {
+            APP_STATE.uploadedFonts = data.uploadedFonts;
+        }
+        
+        if (data.currentFont) {
+            APP_STATE.currentFont = data.currentFont;
+        }
+        
+        // تاريخ الإشعارات
+        if (data.notificationHistory) {
+            APP_STATE.notificationHistory = data.notificationHistory;
+        }
+        
+        // حالات خاصة
+        if (data.focusMode !== undefined) {
+            APP_STATE.focusMode = data.focusMode;
+        }
+        
+        if (data.audioEnabled !== undefined) {
+            APP_STATE.audioEnabled = data.audioEnabled;
+        }
+        
+        // تطبيق كل التحديثات
+        updateDisplay();
+        updateSettingsUI();
+        updateTasksList();
+        updateNotificationHistory();
+        updatePresetList();
+        updateUploadedFontsList();
+        
+        // خاص بالفيديو - تأخير التحميل
+        setTimeout(() => {
+            if (data.mediaData && data.mediaData.mediaEnabled && data.mediaData.mediaUrl) {
+                // تحميل الفيديو/الصورة
+                APP_STATE.settings.mediaUrl = data.mediaData.mediaUrl;
+                APP_STATE.settings.mediaType = data.mediaData.mediaType;
+                APP_STATE.settings.mediaEnabled = data.mediaData.mediaEnabled;
+                
+                // تحديث واجهة الإعدادات
+                if (elements.mediaUrl) {
+                    elements.mediaUrl.value = data.mediaData.mediaUrl;
+                }
+                if (elements.mediaToggle) {
+                    elements.mediaToggle.classList.toggle('active', data.mediaData.mediaEnabled);
+                }
+                
+                // تشغيل الفيديو لو كان فيديو
+                if (data.mediaData.mediaType === 'video' && data.mediaData.mediaUrl) {
+                    setTimeout(() => {
+                        playVideoBackground(data.mediaData.mediaUrl);
+                    }, 1000);
+                } else if (data.mediaData.mediaType === 'image') {
+                    // تحميل الصورة
+                    updateBackground();
+                }
+            }
+            
+            // تطبيق الإعدادات
+            applySettings();
+        }, 500);
+        
+        console.log('✅ All settings loaded successfully');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Load error:', error);
+        return false;
+    }
+}
 
+// ============================================
+// نظام حفظ تلقائي ذكي
+// ============================================
 
+let autoSaveTimeout = null;
+let lastSaveState = '';
 
+// دالة حفظ ذكي (تحفظ بس لو فيه تغيير)
+function smartSave() {
+    // إلغاء أي حفظ قادم
+    if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+    }
+    
+    // حفظ بعد 2 ثانية (لتجميع التغييرات)
+    autoSaveTimeout = setTimeout(() => {
+        // مقارنة مع آخر حالة
+        const currentState = JSON.stringify({
+            timer: APP_STATE,
+            settings: APP_STATE.settings,
+            mediaUrl: APP_STATE.settings.mediaUrl
+        });
+        
+        // إذا فيه تغيير، احفظ
+        if (currentState !== lastSaveState) {
+            saveAllSettings();
+            lastSaveState = currentState;
+        }
+    }, 2000);
+}
 
+// إضافة مستمعات للحفظ التلقائي
+function setupAutoSaveListeners() {
+    // مستمعات للحقول
+    const inputElements = document.querySelectorAll('input, select, textarea, .toggle-switch');
+    inputElements.forEach(element => {
+        element.addEventListener('change', smartSave);
+        element.addEventListener('input', smartSave);
+    });
+    
+    // مستمعات للأزرار
+    const buttonElements = document.querySelectorAll('button');
+    buttonElements.forEach(button => {
+        if (!button.id.includes('installPWA')) {
+            button.addEventListener('click', smartSave);
+        }
+    });
+    
+    // مستمعات للتايمر
+    const timerActions = ['toggleTimer', 'confirmReset', 'addMinutes', 'setQuickPreset'];
+    timerActions.forEach(action => {
+        const original = window[action];
+        if (original) {
+            window[action] = function(...args) {
+                const result = original.apply(this, args);
+                setTimeout(smartSave, 100);
+                return result;
+            };
+        }
+    });
+    
+    // حفظ عند إغلاق الصفحة
+    window.addEventListener('beforeunload', function() {
+        saveAllSettings();
+    });
+    
+    // حفظ كل دقيقة (سفيتي)
+    setInterval(() => {
+        smartSave();
+    }, 60000);
+    
+    console.log('✅ Auto-save system activated');
+}
 
+// ============================================
+// استعادة الفيديو الكبيرة (Blob Storage)
+// ============================================
 
+// دالة خاصة لحفظ الفيديوهات الكبيرة
+function saveLargeVideo() {
+    if (!APP_STATE.settings.mediaUrl || APP_STATE.settings.mediaType !== 'video') return;
+    
+    // إذا الفيديو رابط خارجي (URL)، مش لازم نخزنه
+    if (APP_STATE.settings.mediaUrl.startsWith('http') || APP_STATE.settings.mediaUrl.startsWith('https')) {
+        console.log('External video URL, skipping local storage');
+        return;
+    }
+    
+    // إذا الفيديو Base64 (من رفع ملف)، نخزنه في IndexedDB
+    if (APP_STATE.settings.mediaUrl.startsWith('data:video/')) {
+        try {
+            const videoKey = 'current_video_' + Date.now();
+            
+            // تخزين المفتاح فقط
+            localStorage.setItem('videoReferenceKey', videoKey);
+            localStorage.setItem('videoReference', APP_STATE.settings.mediaUrl.substring(0, 100));
+            
+            console.log('✅ Video reference saved');
+        } catch (error) {
+            console.warn('Could not save video locally:', error);
+        }
+    }
+}
+
+// ============================================
+// استعادة من نسخ قديمة
+// ============================================
+
+function migrateOldData() {
+    // محاولة تحميل من النسخ القديمة
+    const oldKeys = [
+        'proTimerEnhancedData',
+        'proTimerData',
+        'timerSettings',
+        'mediaSettings'
+    ];
+    
+    oldKeys.forEach(key => {
+        const oldData = localStorage.getItem(key);
+        if (oldData) {
+            try {
+                const data = JSON.parse(oldData);
+                console.log(`Found old data in ${key}, migrating...`);
+                
+                // دمج مع البيانات الحالية
+                if (data.settings) {
+                    APP_STATE.settings = { ...APP_STATE.settings, ...data.settings };
+                }
+                
+                if (data.timer) {
+                    APP_STATE.hours = data.timer.hours || APP_STATE.hours;
+                    APP_STATE.minutes = data.timer.minutes || APP_STATE.minutes;
+                    APP_STATE.seconds = data.timer.seconds || APP_STATE.seconds;
+                }
+                
+                // حفظ البيانات المدمجة
+                saveAllSettings();
+                
+                // مسح القديم
+                localStorage.removeItem(key);
+                
+            } catch (error) {
+                console.error('Migration error:', error);
+            }
+        }
+    });
+}
+
+// ============================================
+// بدء النظام
+// ============================================
+
+// تشغيل عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    // هجرة البيانات القديمة
+    setTimeout(migrateOldData, 500);
+    
+    // تحميل الإعدادات
+    setTimeout(() => {
+        const loaded = loadAllSettings();
+        
+        if (loaded) {
+            console.log('✅ Settings loaded from previous session');
+            
+            // رسالة للمستخدم
+            setTimeout(() => {
+                showToast('تم استعادة الإعدادات السابقة', 'success');
+                
+                // إذا كان فيه فيديو محفوظ
+                if (APP_STATE.settings.mediaEnabled && APP_STATE.settings.mediaUrl) {
+                    setTimeout(() => {
+                        if (APP_STATE.settings.mediaType === 'video') {
+                            showToast('جاري استعادة الفيديو الخلفية...', 'info');
+                        }
+                    }, 1000);
+                }
+            }, 1000);
+            
+        } else {
+            console.log('No previous settings found, using defaults');
+        }
+        
+        // تفعيل نظام الحفظ التلقائي
+        setTimeout(setupAutoSaveListeners, 2000);
+        
+    }, 1000);
+});
+
+// ============================================
+// أزرار يدوية للحفظ والاستعادة
+// ============================================
+
+// إضافة أزرار في واجهة الإعدادات
+setTimeout(() => {
+    const advancedTab = document.querySelector('[data-tab-content="advanced"]');
+    if (advancedTab) {
+        const saveButtons = `
+            <div class="card">
+                <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <i class="fas fa-save"></i> التحكم في الحفظ
+                </h3>
+                <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="forceSaveNow()" class="btn-secondary touch-feedback">
+                            <i class="fas fa-save mr-2"></i> حفظ الآن
+                        </button>
+                        <button onclick="loadAllSettings()" class="btn-secondary touch-feedback">
+                            <i class="fas fa-undo mr-2"></i> استعادة
+                        </button>
+                    </div>
+                    <button onclick="exportAllData()" class="btn-secondary w-full touch-feedback">
+                        <i class="fas fa-download mr-2"></i> تصدير جميع البيانات
+                    </button>
+                    <button onclick="clearAllDataConfirm()" class="btn-secondary w-full text-red-300 border-red-500/30 touch-feedback">
+                        <i class="fas fa-trash-alt mr-2"></i> مسح كل البيانات
+                    </button>
+                    <div class="text-xs opacity-60 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        يتم الحفظ تلقائياً عند أي تغيير
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // البحث عن مكان مناسب للإضافة
+        const existingCards = advancedTab.querySelectorAll('.card');
+        if (existingCards.length > 1) {
+            existingCards[existingCards.length - 1].insertAdjacentHTML('afterend', saveButtons);
+        }
+    }
+}, 3000);
+
+// دالة الحفظ القسري
+function forceSaveNow() {
+    if (saveAllSettings()) {
+        showToast('تم حفظ جميع الإعدادات', 'success');
+    }
+}
+
+// دالة تصدير كل البيانات
+function exportAllData() {
+    saveAllSettings();
+    
+    const data = localStorage.getItem('proTimerCompleteData');
+    if (!data) {
+        showToast('لا توجد بيانات للتصدير', 'warning');
+        return;
+    }
+    
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `protimer-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast('تم تصدير جميع البيانات', 'success');
+}
+
+// تأكيد مسح البيانات
+function clearAllDataConfirm() {
+    Swal.fire({
+        title: 'مسح كل البيانات؟',
+        text: 'هذا سيمسح جميع الإعدادات، المهام، البريسيتات، والوسائط! لا يمكن التراجع عن هذا!',
+        icon: 'warning',
+        background: '#0f172a',
+        color: '#f8fafc',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، امسح الكل!',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            localStorage.clear();
+            APP_STATE.tasks = [];
+            APP_STATE.presets = {};
+            APP_STATE.uploadedFonts = {};
+            APP_STATE.notificationHistory = [];
+            APP_STATE.settings.mediaUrl = '';
+            APP_STATE.settings.mediaEnabled = false;
+            
+            location.reload();
+        }
+    });
+}
+</script>
+<script>
+// ============================================
+// ENHANCED FLASH & SOUND SYSTEM - FIXED
+// ============================================
+
+// نظام الوميض النهائي - إصلاح كامل
+let flashInterval = null;
+let tickSoundInterval = null;
+
+function startFlashAndTick(secondsLeft) {
+    if (!APP_STATE.settings.flashEnabled && !APP_STATE.settings.tickSound) return;
+    
+    console.log(`⚡ تفعيل الوميض والتنبيه لـ ${secondsLeft} ثانية متبقية`);
+    
+    // تنظيف أي فترات سابقة
+    stopFlashAndTick();
+    
+    let counter = secondsLeft;
+    
+    flashInterval = setInterval(() => {
+        if (counter <= 0) {
+            stopFlashAndTick();
+            return;
+        }
+        
+        // ⚡ الوميض (إذا مفعل في الإعدادات)
+        if (APP_STATE.settings.flashEnabled) {
+            document.body.classList.toggle('flash-red');
+            
+            // إزالة الوميض بعد 200ms
+            setTimeout(() => {
+                document.body.classList.remove('flash-red');
+            }, 200);
+        }
+        
+        // 🔊 صوت التنبيه (إذا مفعل في الإعدادات)
+        if (APP_STATE.settings.tickSound && APP_STATE.audioEnabled) {
+            playTickSound(counter);
+        }
+        
+        counter--;
+    }, 1000);
+}
+
+function stopFlashAndTick() {
+    if (flashInterval) {
+        clearInterval(flashInterval);
+        flashInterval = null;
+    }
+    if (tickSoundInterval) {
+        clearInterval(tickSoundInterval);
+        tickSoundInterval = null;
+    }
+    document.body.classList.remove('flash-red');
+}
+
+function playTickSound(counter) {
+    try {
+        // أصوات مختلفة حسب العد التنازلي
+        let frequency = 800;
+        let duration = 0.1;
+        
+        if (counter <= 3) {
+            frequency = 1200; // صوت عالي للأخيرة
+            duration = 0.2;
+        } else if (counter <= 6) {
+            frequency = 1000; // صوت متوسط
+            duration = 0.15;
+        }
+        
+        // إنشاء صوت
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+        
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + duration);
+        
+    } catch (e) {
+        console.log("🎵 استخدام الصوت البديل للتنبيه");
+    }
+}
+
+// ربط النظام بالمؤقت
+const originalStartTimer = window.startTimer;
+window.startTimer = function() {
+    if (originalStartTimer) originalStartTimer();
+    
+    // بدء مراقبة الـ 10 ثواني الأخيرة
+    const checkInterval = setInterval(() => {
+        if (APP_STATE.isRunning && APP_STATE.remainingSeconds <= 10 && APP_STATE.remainingSeconds > 0) {
+            startFlashAndTick(APP_STATE.remainingSeconds);
+            clearInterval(checkInterval);
+        }
+        
+        if (!APP_STATE.isRunning) {
+            clearInterval(checkInterval);
+            stopFlashAndTick();
+        }
+    }, 100);
+};
+
+// ============================================
+// ENHANCED BACKGROUND TIMER - FIXED
+// ============================================
+
+// تتبع الوقت في الخلفية
+let backgroundStartTime = 0;
+let backgroundElapsed = 0;
+
+// عند تحويل الصفحة للخلفية
+document.addEventListener('visibilitychange', function() {
+    if (APP_STATE.isRunning) {
+        if (document.hidden) {
+            // حفظ وقت البدء
+            backgroundStartTime = Date.now();
+            console.log('⏱️ المؤقت مستمر في الخلفية...');
+            
+            // إشعار بسيط
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification('⏱️ ProTimer', {
+                    body: 'المؤقت مستمر في العمل في الخلفية',
+                    icon: '/icons/icon-192x192.png',
+                    silent: true
+                });
+            }
+        } else {
+            // حساب الوقت المنقضي في الخلفية
+            if (backgroundStartTime > 0) {
+                backgroundElapsed = Math.floor((Date.now() - backgroundStartTime) / 1000);
+                backgroundStartTime = 0;
+                
+                // تحديث الوقت المتبقي
+                if (APP_STATE.remainingSeconds > backgroundElapsed) {
+                    APP_STATE.remainingSeconds -= backgroundElapsed;
+                    
+                    // تحديث العرض
+                    const hours = Math.floor(APP_STATE.remainingSeconds / 3600);
+                    const minutes = Math.floor((APP_STATE.remainingSeconds % 3600) / 60);
+                    const seconds = APP_STATE.remainingSeconds % 60;
+                    
+                    APP_STATE.hours = hours;
+                    APP_STATE.minutes = minutes;
+                    APP_STATE.seconds = seconds;
+                    
+                    updateDisplay();
+                    console.log(`🔄 تم تحديث المؤقت بعد ${backgroundElapsed} ثانية في الخلفية`);
+                }
+            }
+        }
+    }
+});
+
+// استمرار المؤقت حتى إذا أغلقت الصفحة
+window.addEventListener('beforeunload', function(e) {
+    if (APP_STATE.isRunning) {
+        // يمكنك حفظ حالة المؤقت هنا
+        localStorage.setItem('timerRunning', JSON.stringify({
+            remaining: APP_STATE.remainingSeconds,
+            timestamp: Date.now()
+        }));
+    }
+});
+
+// ============================================
+// FOCUS MODE ENHANCEMENT - NO DISTRACTIONS
+// ============================================
+
+// Focus Mode الحقيقي - بدون إشعارات
+const originalEnableFocusMode = window.enableFocusMode;
+window.enableFocusMode = function() {
+    // استدعاء الوظيفة الأصلية أولاً
+    if (originalEnableFocusMode) originalEnableFocusMode();
+    
+    // إخفاء كل الإشعارات
+    hideAllNotifications();
+    
+    // تعطيل أي إشعارات مستقبلية
+    disableNotificationsInFocusMode();
+    
+    console.log("🎯 وضع التركيز: تم إخفاء جميع الإشعارات");
+};
+
+function hideAllNotifications() {
+    // إخفاء كل الإشعارات المرئية
+    document.querySelectorAll('.swal2-container, .toast, .notification').forEach(el => {
+        el.style.display = 'none';
+        el.remove();
+    });
+    
+    // إخفاء لوحة المهام
+    const tasksPanel = document.getElementById('quickTasksPanel');
+    if (tasksPanel) tasksPanel.style.display = 'none';
+}
+
+function disableNotificationsInFocusMode() {
+    // حفظ الإعدادات الأصلية
+    const originalNotifications = APP_STATE.settings.notificationsEnabled;
+    const originalSounds = APP_STATE.settings.notificationSoundEnabled;
+    
+    // تعطيل مؤقت
+    APP_STATE.settings.notificationsEnabled = false;
+    APP_STATE.settings.notificationSoundEnabled = false;
+    
+    // استعادة عند الخروج من Focus Mode
+    const originalDisableFocusMode = window.disableFocusMode;
+    window.disableFocusMode = function() {
+        if (originalDisableFocusMode) originalDisableFocusMode();
+        APP_STATE.settings.notificationsEnabled = originalNotifications;
+        APP_STATE.settings.notificationSoundEnabled = originalSounds;
+    };
+}
+
+// ============================================
+// ENHANCED TIMER FUNCTIONS - FIXED
+// ============================================
+
+// إصلاح مشكلة إيقاف المؤقت
+const originalToggleTimer = window.toggleTimer;
+window.toggleTimer = function() {
+    const wasRunning = APP_STATE.isRunning;
+    
+    if (originalToggleTimer) originalToggleTimer();
+    
+    // إيقاف الوميض والصوت عند إيقاف المؤقت
+    if (wasRunning && !APP_STATE.isRunning) {
+        stopFlashAndTick();
+    }
+};
+
+// CSS للوميض
+const flashStyle = document.createElement('style');
+flashStyle.textContent = `
+    @keyframes flash-red {
+        0%, 100% { background-color: transparent; }
+        50% { background-color: rgba(239, 68, 68, 0.3); }
+    }
+    
+    .flash-red {
+        animation: flash-red 0.5s infinite alternate;
+    }
+`;
+document.head.appendChild(flashStyle);
+
+// ============================================
+// INITIALIZATION - SIMPLIFIED
+// ============================================
+
+// تهيئة مبسطة عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("🚀 ProTimer المحسن جاهز للعمل!");
+    
+    // إشعار ترحيبي بسيط
+    setTimeout(() => {
+        if (!localStorage.getItem('proTimer_welcomed_v2')) {
+            Swal.fire({
+                title: '🎯 ProTimer المحسن',
+                html: `
+                    <div style="text-align: center; padding: 10px;">
+                        <div style="font-size: 20px; margin-bottom: 15px;">بكل بساطة:</div>
+                        <div>• ⚡ وميض وصوت في آخر 10 ثواني</div>
+                        <div>• 🎯 وضع تركيز حقيقي (بدون إشعارات)</div>
+                        <div>• ⏱️ استمرار المؤقت في الخلفية</div>
+                    </div>
+                `,
+                icon: 'success',
+                confirmButtonText: 'ابدأ الآن',
+                background: '#0f172a',
+                color: '#f8fafc',
+                timer: 3000
+            });
+            localStorage.setItem('proTimer_welcomed_v2', 'true');
+        }
+    }, 1000);
+    
+    // استعادة المؤقت إذا كان يعمل قبل إغلاق الصفحة
+    const savedTimer = localStorage.getItem('timerRunning');
+    if (savedTimer) {
+        try {
+            const data = JSON.parse(savedTimer);
+            const elapsed = Math.floor((Date.now() - data.timestamp) / 1000);
+            
+            if (data.remaining > elapsed) {
+                const remaining = data.remaining - elapsed;
+                
+                // ضبط الوقت
+                APP_STATE.hours = Math.floor(remaining / 3600);
+                APP_STATE.minutes = Math.floor((remaining % 3600) / 60);
+                APP_STATE.seconds = remaining % 60;
+                APP_STATE.totalSeconds = remaining;
+                APP_STATE.remainingSeconds = remaining;
+                
+                // بدء المؤقت
+                setTimeout(() => {
+                    startTimer();
+                    showToast('🔄 تم استعادة المؤقت من الخلفية', 'info');
+                }, 1000);
+            }
+            
+            localStorage.removeItem('timerRunning');
+        } catch (e) {
+            console.error("❌ خطأ في استعادة المؤقت:", e);
+        }
+    }
+});
+
+// ============================================
+// AUTO-SAVE ENHANCEMENT
+// ============================================
+
+// حفظ عند إغلاق الصفحة
+window.addEventListener('beforeunload', function() {
+    // حفظ حالة المؤقت إذا كان يعمل
+    if (APP_STATE.isRunning) {
+        localStorage.setItem('timerRunning', JSON.stringify({
+            remaining: APP_STATE.remainingSeconds,
+            timestamp: Date.now()
+        }));
+    }
+});
+
+console.log("✨ ProTimer Enhanced System Loaded Successfully!");
+</script>
 
 
 </script>
+<!-- أضف هذا الكود في نهاية HTML قبل </body> -->
 
+<!-- Right-Click Context Menu -->
+<div id="contextMenu" class="fixed hidden z-[9999] glass-dark rounded-xl p-2 shadow-2xl border border-white/10 min-w-[200px]">
+    <div class="menu-section mb-2">
+        <div class="menu-header text-xs uppercase opacity-50 px-2 py-1">Timer Controls</div>
+        <button onclick="toggleTimer()" class="menu-item">
+            <i class="fas fa-play mr-2 text-green-400"></i>
+            <span>Start/Pause</span>
+            <span class="menu-shortcut">Space</span>
+        </button>
+        <button onclick="confirmReset()" class="menu-item">
+            <i class="fas fa-redo mr-2 text-yellow-400"></i>
+            <span>Reset Timer</span>
+            <span class="menu-shortcut">R</span>
+        </button>
+        <button onclick="addMinutes(1)" class="menu-item">
+            <i class="fas fa-plus mr-2 text-blue-400"></i>
+            <span>Add 1 Minute</span>
+            <span class="menu-shortcut">+</span>
+        </button>
+    </div>
+    
+    <div class="menu-section mb-2">
+        <div class="menu-header text-xs uppercase opacity-50 px-2 py-1">Quick Actions</div>
+        <button onclick="toggleFocusMode()" class="menu-item">
+            <i class="fas fa-eye mr-2 text-purple-400"></i>
+            <span>Focus Mode</span>
+            <span class="menu-shortcut">F</span>
+        </button>
+        <button onclick="toggleFullscreen()" class="menu-item">
+            <i class="fas fa-expand mr-2 text-indigo-400"></i>
+            <span>Fullscreen</span>
+            <span class="menu-shortcut">F11</span>
+        </button>
+        <button onclick="toggleSettings()" class="menu-item">
+            <i class="fas fa-cog mr-2 text-gray-400"></i>
+            <span>Settings</span>
+            <span class="menu-shortcut">Ctrl+O</span>
+        </button>
+    </div>
+    
+    <div class="menu-section">
+        <div class="menu-header text-xs uppercase opacity-50 px-2 py-1">Stats</div>
+        <button onclick="toggleStatsPanel()" class="menu-item">
+            <i class="fas fa-chart-line mr-2 text-green-400"></i>
+            <span>Show Stats</span>
+        </button>
+        <button onclick="exportAllData()" class="menu-item">
+            <i class="fas fa-download mr-2 text-blue-400"></i>
+            <span>Export All Data</span>
+        </button>
+    </div>
+</div>
+
+<!-- Stats Widget Button -->
+<div id="timerStatsWidget" class="fixed bottom-28 left-4 z-40 animate-fade-in">
+    <button onclick="toggleStatsPanel()" class="timer-stats-btn glass rounded-full p-3 shadow-lg touch-feedback">
+        <i class="fas fa-history text-xl"></i>
+    </button>
+    <div class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-pulse" id="liveTimerBadge" style="display: none;">
+        <i class="fas fa-play"></i>
+    </div>
+</div>
+
+<!-- Draggable Stats Panel -->
+<div id="timerStatsPanel" class="fixed z-50 glass-dark rounded-2xl p-4 shadow-2xl hidden animate-slide-up draggable-panel" style="width: 320px; top: 150px; left: 20px;">
+    <div class="panel-header flex justify-between items-center mb-4 cursor-move" id="statsPanelDragHandle">
+        <h3 class="text-lg font-bold flex items-center gap-2">
+            <i class="fas fa-chart-line"></i>
+            <span>سجل التايمر الحي</span>
+            <span id="liveStatus" class="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full hidden">
+                <i class="fas fa-circle animate-pulse-slow"></i> مباشر
+            </span>
+        </h3>
+        <button onclick="toggleStatsPanel()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors touch-feedback">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <!-- Live Timer Section -->
+    <div id="liveTimerSection" class="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl p-3 mb-4 border border-blue-500/20 hidden">
+        <div class="flex justify-between items-center mb-2">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-running text-blue-400"></i>
+                <span class="text-sm font-medium">تايمر يعمل الآن</span>
+            </div>
+            <div id="currentSessionTime" class="font-mono font-bold text-lg">00:00:00</div>
+        </div>
+        <div class="text-xs opacity-70">يتم الحساب تلقائياً...</div>
+        <div class="mt-2 flex gap-2">
+            <button onclick="pauseLiveTracking()" class="btn-secondary text-xs px-2 py-1 flex-1">
+                <i class="fas fa-pause mr-1"></i> إيقاف مؤقت
+            </button>
+            <button onclick="endCurrentSession()" class="btn-primary text-xs px-2 py-1 flex-1">
+                <i class="fas fa-stop mr-1"></i> إنهاء الجلسة
+            </button>
+        </div>
+    </div>
+    
+    <!-- Stats Overview -->
+    <div id="statsOverview" class="space-y-4 mb-4">
+        <!-- Today Stats -->
+        <div class="bg-white/5 rounded-xl p-3">
+            <h4 class="text-sm font-medium mb-2 flex items-center gap-2">
+                <i class="fas fa-calendar-day text-blue-400"></i>
+                <span>اليوم</span>
+                <span class="text-xs opacity-60" id="currentDate"></span>
+            </h4>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div>
+                    <div class="text-2xl font-bold" id="todayHours">0</div>
+                    <div class="text-xs opacity-60">ساعات</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold" id="todayMinutes">0</div>
+                    <div class="text-xs opacity-60">دقائق</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold" id="todaySessionsCount">0</div>
+                    <div class="text-xs opacity-60">جلسة</div>
+                </div>
+            </div>
+            <div class="mt-2 text-center text-xs opacity-70" id="todaySeconds">0 ثانية</div>
+        </div>
+        
+        <!-- Total Stats -->
+        <div class="bg-white/5 rounded-xl p-3">
+            <h4 class="text-sm font-medium mb-2 flex items-center gap-2">
+                <i class="fas fa-chart-bar text-green-400"></i>
+                <span>الإجمالي</span>
+            </h4>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div>
+                    <div class="text-2xl font-bold" id="totalHours">0</div>
+                    <div class="text-xs opacity-60">ساعات</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold" id="totalMinutes">0</div>
+                    <div class="text-xs opacity-60">دقائق</div>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold" id="totalSessions">0</div>
+                    <div class="text-xs opacity-60">جلسة</div>
+                </div>
+            </div>
+            <div class="mt-2 text-center text-xs opacity-70">
+                بدء التسجيل: <span id="firstRecordDate">-</span>
+            </div>
+        </div>
+        
+        <!-- Best Session -->
+        <div class="bg-white/5 rounded-xl p-3">
+            <h4 class="text-sm font-medium mb-2 flex items-center gap-2">
+                <i class="fas fa-trophy text-yellow-400"></i>
+                <span>أفضل جلسة</span>
+            </h4>
+            <div id="bestSession" class="text-center">
+                <div class="text-lg font-bold" id="bestSessionTime">00:00:00</div>
+                <div class="text-xs opacity-70" id="bestSessionDate">-</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sessions History -->
+    <div class="mb-4">
+        <div class="flex justify-between items-center mb-2">
+            <h4 class="text-sm font-medium">الجلسات الأخيرة</h4>
+            <div class="flex gap-1">
+                <button onclick="exportSessionsData()" class="text-xs btn-secondary px-2 py-1 touch-feedback">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button onclick="refreshSessions()" class="text-xs btn-secondary px-2 py-1 touch-feedback">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div id="sessionsList" class="space-y-2 max-h-48 overflow-y-auto">
+            <div class="text-center py-4 opacity-50">
+                <i class="fas fa-clock text-2xl mb-2"></i>
+                <p>لا توجد جلسات مسجلة</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Controls -->
+    <div class="flex gap-2">
+        <button onclick="clearTodaySessions()" class="btn-secondary flex-1 text-sm touch-feedback">
+            <i class="fas fa-broom mr-1"></i> مسح اليوم
+        </button>
+        <button onclick="clearAllSessions()" class="btn-secondary flex-1 text-sm text-red-300 border-red-500/30 touch-feedback">
+            <i class="fas fa-trash-alt mr-1"></i> مسح الكل
+        </button>
+    </div>
+    
+    <!-- Panel Footer -->
+    <div class="mt-3 text-xs opacity-50 text-center panel-footer">
+        <i class="fas fa-arrows-alt mr-1"></i>
+        اسحب العنوان لتحريك اللوحة
+    </div>
+</div>
+
+<style>
+/* Context Menu Styles */
+#contextMenu {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    animation: fadeIn 0.15s ease-out;
+}
+
+.menu-section {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.menu-section:last-child {
+    border-bottom: none;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: white;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    font-size: 14px;
+}
+
+.menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(2px);
+}
+
+.menu-item:active {
+    transform: translateX(0) scale(0.98);
+}
+
+.menu-shortcut {
+    font-size: 11px;
+    opacity: 0.5;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 10px;
+}
+
+.menu-header {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Hide original tasks button */
+#quickTasksBtn {
+    display: none !important;
+}
+
+/* Stats Panel Styles */
+body.focus-mode #timerStatsWidget,
+body.focus-mode #timerStatsPanel {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+/* Draggable Panel Styles */
+.draggable-panel {
+    position: fixed;
+    z-index: 1000;
+    cursor: default;
+    user-select: none;
+    transition: transform 0.1s ease-out;
+}
+
+.draggable-panel.dragging {
+    cursor: grabbing !important;
+    user-select: none;
+    opacity: 0.9;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    z-index: 1001 !important;
+}
+
+.panel-header {
+    padding: 8px 12px;
+    margin: -12px -12px 12px -12px;
+    border-radius: 12px 12px 0 0;
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: move;
+    user-select: none;
+}
+
+.panel-header:hover {
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+}
+
+.panel-footer {
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 10px;
+}
+
+/* Stats Widget */
+.timer-stats-btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    animation: pulse 2s infinite;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+    cursor: pointer;
+}
+
+.timer-stats-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+}
+
+.timer-stats-btn.live {
+    background: linear-gradient(135deg, #10b981, #059669);
+    animation: pulse-glow 1s infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+    50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.8); }
+}
+
+/* Session Items */
+.session-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s;
+}
+
+.session-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+}
+
+.session-item.active {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.session-time {
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.session-date {
+    font-size: 11px;
+    opacity: 0.7;
+}
+
+.session-duration {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.session-progress {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.session-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    border-radius: 2px;
+}
+
+/* Prevent context menu on timer digits */
+.time-value {
+    user-select: none;
+}
+
+/* Close outside click overlay */
+.panel-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    background: transparent;
+    display: none;
+}
+
+.panel-overlay.active {
+    display: block;
+}
+
+/* Live badge */
+#liveTimerBadge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    font-size: 10px;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    animation: pulse 1.5s infinite;
+}
+
+/* Ensure everything is saved properly */
+.autosave-notice {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #10b981;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    z-index: 1000;
+    animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0; transform: translateY(10px); }
+    20%, 80% { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<script>
+// ============================================
+// COMPLETE AUTO-SAVE SYSTEM FOR ALL SETTINGS
+// ============================================
+
+const AUTO_SAVE = {
+    enabled: true,
+    interval: 5000,
+    lastSave: 0,
+    timeout: null
+};
+
+// Initialize complete auto-save system
+function initializeAutoSaveSystem() {
+    console.log("💾 تهيئة نظام الحفظ التلقائي...");
+    
+    // Load all data on startup
+    loadAllData();
+    
+    // Start auto-save interval
+    startAutoSaveInterval();
+    
+    // Save on page unload
+    setupUnloadSave();
+    
+    console.log("✅ نظام الحفظ التلقائي جاهز");
+}
+
+// Load all data from localStorage
+function loadAllData() {
+    try {
+        console.log("📂 جاري تحميل جميع البيانات...");
+        
+        // 1. Load timer state
+        const timerData = localStorage.getItem('proTimerState');
+        if (timerData) {
+            const data = JSON.parse(timerData);
+            if (data.timer) {
+                APP_STATE.hours = data.timer.hours || 0;
+                APP_STATE.minutes = data.timer.minutes || 10;
+                APP_STATE.seconds = data.timer.seconds || 0;
+                APP_STATE.originalHours = data.timer.originalHours || APP_STATE.hours;
+                APP_STATE.originalMinutes = data.timer.originalMinutes || APP_STATE.minutes;
+                APP_STATE.originalSeconds = data.timer.originalSeconds || APP_STATE.seconds;
+                APP_STATE.totalSeconds = data.timer.totalSeconds || calculateTotalSeconds();
+                APP_STATE.remainingSeconds = data.timer.remainingSeconds || APP_STATE.totalSeconds;
+                APP_STATE.isRunning = data.timer.isRunning || false;
+                APP_STATE.isPaused = data.timer.isPaused || false;
+                APP_STATE.isFinished = data.timer.isFinished || false;
+            }
+        }
+        
+        // 2. Load settings
+        const settingsData = localStorage.getItem('proTimerSettings');
+        if (settingsData) {
+            const data = JSON.parse(settingsData);
+            APP_STATE.settings = { ...APP_STATE.settings, ...data };
+        }
+        
+        // 3. Load media settings
+        const mediaData = localStorage.getItem('proTimerMedia');
+        if (mediaData) {
+            const data = JSON.parse(mediaData);
+            APP_STATE.settings.mediaUrl = data.mediaUrl || '';
+            APP_STATE.settings.mediaType = data.mediaType || '';
+            APP_STATE.settings.mediaEnabled = data.mediaEnabled || false;
+            APP_STATE.settings.mediaOpacity = data.mediaOpacity || 30;
+        }
+        
+        // 4. Load audio settings
+        const audioData = localStorage.getItem('proTimerAudio');
+        if (audioData) {
+            const data = JSON.parse(audioData);
+            APP_STATE.settings.audioEnabled = data.audioEnabled || false;
+            APP_STATE.settings.audioUrl = data.audioUrl || '';
+            APP_STATE.settings.audioVolume = data.audioVolume || 50;
+            APP_STATE.audioEnabled = data.audioEnabled || false;
+        }
+        
+        // 5. Load stats data
+        const statsData = localStorage.getItem('proTimerStats');
+        if (statsData) {
+            LIVE_TIMER.sessions = JSON.parse(statsData).sessions || [];
+            LIVE_TIMER.totalSeconds = JSON.parse(statsData).totalSeconds || 0;
+            LIVE_TIMER.totalSessions = JSON.parse(statsData).totalSessions || 0;
+            LIVE_TIMER.bestSession = JSON.parse(statsData).bestSession || { seconds: 0, time: "00:00:00", date: null };
+        }
+        
+        // Apply all loaded settings
+        updateDisplay();
+        updateSettingsUI();
+        applySettings();
+        
+    } catch (error) {
+        console.error("❌ خطأ في تحميل البيانات:", error);
+    }
+}
+
+// Save all data to localStorage
+function saveAllData() {
+    if (!AUTO_SAVE.enabled) return;
+    
+    try {
+        const now = Date.now();
+        if (now - AUTO_SAVE.lastSave < 1000) return;
+        
+        // 1. Save timer state
+        const timerState = {
+            timer: {
+                hours: APP_STATE.hours,
+                minutes: APP_STATE.minutes,
+                seconds: APP_STATE.seconds,
+                originalHours: APP_STATE.originalHours,
+                originalMinutes: APP_STATE.originalMinutes,
+                originalSeconds: APP_STATE.originalSeconds,
+                totalSeconds: APP_STATE.totalSeconds,
+                remainingSeconds: APP_STATE.remainingSeconds,
+                isRunning: APP_STATE.isRunning,
+                isPaused: APP_STATE.isPaused,
+                isFinished: APP_STATE.isFinished
+            },
+            timestamp: now
+        };
+        localStorage.setItem('proTimerState', JSON.stringify(timerState));
+        
+        // 2. Save settings
+        localStorage.setItem('proTimerSettings', JSON.stringify(APP_STATE.settings));
+        
+        // 3. Save media settings
+        const mediaSettings = {
+            mediaUrl: APP_STATE.settings.mediaUrl,
+            mediaType: APP_STATE.settings.mediaType,
+            mediaEnabled: APP_STATE.settings.mediaEnabled,
+            mediaOpacity: APP_STATE.settings.mediaOpacity
+        };
+        localStorage.setItem('proTimerMedia', JSON.stringify(mediaSettings));
+        
+        // 4. Save audio settings
+        const audioSettings = {
+            audioEnabled: APP_STATE.settings.audioEnabled,
+            audioUrl: APP_STATE.settings.audioUrl,
+            audioVolume: APP_STATE.settings.audioVolume
+        };
+        localStorage.setItem('proTimerAudio', JSON.stringify(audioSettings));
+        
+        // 5. Save stats data
+        const statsData = {
+            sessions: LIVE_TIMER.sessions || [],
+            totalSeconds: LIVE_TIMER.totalSeconds || 0,
+            totalSessions: LIVE_TIMER.totalSessions || 0,
+            bestSession: LIVE_TIMER.bestSession || { seconds: 0, time: "00:00:00", date: null }
+        };
+        localStorage.setItem('proTimerStats', JSON.stringify(statsData));
+        
+        AUTO_SAVE.lastSave = now;
+        
+    } catch (error) {
+        console.error("❌ خطأ في حفظ البيانات:", error);
+    }
+}
+
+// Start auto-save interval
+function startAutoSaveInterval() {
+    if (AUTO_SAVE.timeout) {
+        clearInterval(AUTO_SAVE.timeout);
+    }
+    
+    AUTO_SAVE.timeout = setInterval(() => {
+        saveAllData();
+    }, AUTO_SAVE.interval);
+}
+
+// Setup save on page unload
+function setupUnloadSave() {
+    window.addEventListener('beforeunload', () => {
+        saveAllData();
+        return null;
+    });
+    
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            saveAllData();
+        }
+    });
+}
+
+// Export all data function
+function exportAllData() {
+    try {
+        const exportData = {
+            app: 'ProTimer',
+            version: '2.2.0',
+            exportDate: new Date().toISOString(),
+            
+            timerState: JSON.parse(localStorage.getItem('proTimerState') || '{}'),
+            settings: JSON.parse(localStorage.getItem('proTimerSettings') || '{}'),
+            mediaSettings: JSON.parse(localStorage.getItem('proTimerMedia') || '{}'),
+            audioSettings: JSON.parse(localStorage.getItem('proTimerAudio') || '{}'),
+            statsData: JSON.parse(localStorage.getItem('proTimerStats') || '{}'),
+            
+            currentTime: new Date().toLocaleString()
+        };
+        
+        const jsonString = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `protimer-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showToast('تم تصدير جميع البيانات بنجاح', 'success');
+        
+    } catch (error) {
+        console.error("❌ خطأ في تصدير البيانات:", error);
+        showToast('خطأ في تصدير البيانات', 'error');
+    }
+}
+
+// ============================================
+// RIGHT-CLICK CONTEXT MENU
+// ============================================
+
+function initializeContextMenu() {
+    console.log("🖱️ تهيئة قائمة النقر بزر الماوس الأيمن...");
+    
+    const contextMenu = document.getElementById('contextMenu');
+    
+    // Show on right-click EXCEPT on timer digits
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        
+        // DON'T show context menu on timer digits
+        if (e.target.closest('.time-value') || 
+            e.target.closest('.time-unit') ||
+            e.target.closest('.timer-digits-container')) {
+            return;
+        }
+        
+        // Don't show on input fields
+        if (e.target.tagName === 'INPUT' || 
+            e.target.tagName === 'TEXTAREA' ||
+            e.target.isContentEditable) {
+            return;
+        }
+        
+        // Show context menu
+        contextMenu.style.display = 'block';
+        contextMenu.style.left = e.pageX + 'px';
+        contextMenu.style.top = e.pageY + 'px';
+        
+        // Adjust position if goes off screen
+        const rect = contextMenu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+            contextMenu.style.left = (e.pageX - rect.width) + 'px';
+        }
+        if (rect.bottom > window.innerHeight) {
+            contextMenu.style.top = (e.pageY - rect.height) + 'px';
+        }
+    });
+    
+    // Hide on click anywhere
+    document.addEventListener('click', function() {
+        contextMenu.style.display = 'none';
+    });
+    
+    // Hide on ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            contextMenu.style.display = 'none';
+        }
+    });
+    
+    // Prevent context menu from closing when clicking inside it
+    contextMenu.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+    
+    console.log("✅ قائمة النقر بزر الماوس الأيمن جاهزة");
+}
+
+// ============================================
+// LIVE TIMER TRACKING SYSTEM
+// ============================================
+
+const LIVE_TIMER = {
+    isTracking: false,
+    isPaused: false,
+    startTime: null,
+    pausedTime: 0,
+    elapsedSeconds: 0,
+    currentSession: null,
+    sessions: [],
+    sessionHistory: [],
+    totalSeconds: 0,
+    totalSessions: 0,
+    firstRecordDate: null,
+    today: {
+        date: new Date().toLocaleDateString('ar-EG'),
+        totalSeconds: 0,
+        sessions: 0
+    },
+    bestSession: {
+        seconds: 0,
+        time: "00:00:00",
+        date: null
+    },
+    updateInterval: null,
+    panelPosition: { x: 20, y: 150 }
+};
+
+// Initialize live timer system
+function initializeLiveTimer() {
+    console.log("⏱️ تهيئة نظام التتبع الحي...");
+    
+    // Load saved data
+    loadLiveTimerData();
+    
+    // Initialize draggable panel
+    initializeDraggablePanel();
+    
+    // Update today's date
+    updateTodayDate();
+    
+    // Update display
+    updateLiveStatsDisplay();
+    updateSessionsHistory();
+    
+    // Start update interval
+    startUpdateInterval();
+    
+    // Integrate with main timer
+    integrateWithMainTimer();
+    
+    console.log("✅ نظام التتبع الحي جاهز");
+}
+
+// Load live timer data
+function loadLiveTimerData() {
+    try {
+        const savedData = localStorage.getItem('proTimerLiveData');
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            
+            if (data.sessions) {
+                LIVE_TIMER.sessions = data.sessions;
+                LIVE_TIMER.sessionHistory = data.sessions.slice(0, 20);
+            }
+            
+            if (data.totalSeconds) LIVE_TIMER.totalSeconds = data.totalSeconds;
+            if (data.totalSessions) LIVE_TIMER.totalSessions = data.totalSessions;
+            if (data.firstRecordDate) LIVE_TIMER.firstRecordDate = data.firstRecordDate;
+            
+            if (data.today) {
+                const todayDate = new Date().toLocaleDateString('ar-EG');
+                if (data.today.date === todayDate) {
+                    LIVE_TIMER.today = data.today;
+                } else {
+                    LIVE_TIMER.today = {
+                        date: todayDate,
+                        totalSeconds: 0,
+                        sessions: 0
+                    };
+                }
+            }
+            
+            if (data.bestSession) {
+                LIVE_TIMER.bestSession = data.bestSession;
+            }
+            
+            console.log(`📊 تم تحميل ${LIVE_TIMER.sessions.length} جلسة`);
+        }
+    } catch (error) {
+        console.error("❌ خطأ في تحميل بيانات التتبع:", error);
+    }
+}
+
+// Save live timer data
+function saveLiveTimerData() {
+    try {
+        const saveData = {
+            sessions: LIVE_TIMER.sessions,
+            totalSeconds: LIVE_TIMER.totalSeconds,
+            totalSessions: LIVE_TIMER.totalSessions,
+            firstRecordDate: LIVE_TIMER.firstRecordDate,
+            today: LIVE_TIMER.today,
+            bestSession: LIVE_TIMER.bestSession,
+            lastUpdate: new Date().toISOString()
+        };
+        
+        localStorage.setItem('proTimerLiveData', JSON.stringify(saveData));
+    } catch (error) {
+        console.error("❌ خطأ في حفظ بيانات التتبع:", error);
+    }
+}
+
+// Start live tracking
+function startLiveTracking() {
+    if (LIVE_TIMER.isTracking || !APP_STATE.isRunning) return;
+    
+    LIVE_TIMER.isTracking = true;
+    LIVE_TIMER.isPaused = false;
+    LIVE_TIMER.startTime = Date.now();
+    LIVE_TIMER.pausedTime = 0;
+    LIVE_TIMER.elapsedSeconds = 0;
+    
+    LIVE_TIMER.currentSession = {
+        id: Date.now(),
+        startTime: LIVE_TIMER.startTime,
+        endTime: null,
+        elapsedSeconds: 0,
+        isActive: true
+    };
+    
+    updateLiveUI();
+    showLiveTimerBadge();
+}
+
+// Pause live tracking
+function pauseLiveTracking() {
+    if (!LIVE_TIMER.isTracking || LIVE_TIMER.isPaused) return;
+    
+    LIVE_TIMER.isPaused = true;
+    LIVE_TIMER.currentSession.isPaused = true;
+    LIVE_TIMER.currentSession.pauseStart = Date.now();
+    
+    updateLiveUI();
+}
+
+// End current session
+function endCurrentSession() {
+    if (!LIVE_TIMER.isTracking) return;
+    
+    const endTime = Date.now();
+    const totalDuration = endTime - LIVE_TIMER.startTime - LIVE_TIMER.pausedTime;
+    const elapsedSeconds = Math.floor(totalDuration / 1000);
+    
+    LIVE_TIMER.currentSession.endTime = endTime;
+    LIVE_TIMER.currentSession.elapsedSeconds = elapsedSeconds;
+    LIVE_TIMER.currentSession.isActive = false;
+    
+    saveCurrentSession();
+    resetLiveTracking();
+    updateLiveUI();
+    hideLiveTimerBadge();
+}
+
+// Save current session
+function saveCurrentSession() {
+    if (!LIVE_TIMER.currentSession) return;
+    
+    const session = LIVE_TIMER.currentSession;
+    const elapsedSeconds = session.elapsedSeconds;
+    
+    if (elapsedSeconds === 0) return;
+    
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('ar-EG');
+    const formattedTime = now.toLocaleTimeString('ar-EG', { 
+        hour12: true, 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+    
+    const hours = Math.floor(elapsedSeconds / 3600);
+    const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+    const seconds = elapsedSeconds % 60;
+    
+    const sessionRecord = {
+        id: session.id,
+        date: now.toISOString(),
+        displayDate: formattedDate,
+        displayTime: formattedTime,
+        hours: hours,
+        minutes: minutes,
+        seconds: seconds,
+        totalSeconds: elapsedSeconds,
+        duration: `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`
+    };
+    
+    LIVE_TIMER.sessions.unshift(sessionRecord);
+    LIVE_TIMER.sessionHistory.unshift(sessionRecord);
+    
+    if (LIVE_TIMER.sessionHistory.length > 20) {
+        LIVE_TIMER.sessionHistory.pop();
+    }
+    
+    LIVE_TIMER.totalSeconds += elapsedSeconds;
+    LIVE_TIMER.totalSessions++;
+    
+    if (!LIVE_TIMER.firstRecordDate) {
+        LIVE_TIMER.firstRecordDate = sessionRecord.date;
+    }
+    
+    const todayDate = new Date().toLocaleDateString('ar-EG');
+    if (LIVE_TIMER.today.date === todayDate) {
+        LIVE_TIMER.today.totalSeconds += elapsedSeconds;
+        LIVE_TIMER.today.sessions++;
+    } else {
+        LIVE_TIMER.today = {
+            date: todayDate,
+            totalSeconds: elapsedSeconds,
+            sessions: 1
+        };
+    }
+    
+    if (elapsedSeconds > LIVE_TIMER.bestSession.seconds) {
+        LIVE_TIMER.bestSession = {
+            seconds: elapsedSeconds,
+            time: sessionRecord.duration,
+            date: formattedDate
+        };
+    }
+    
+    saveLiveTimerData();
+    updateLiveStatsDisplay();
+    updateSessionsHistory();
+}
+
+// Reset live tracking
+function resetLiveTracking() {
+    LIVE_TIMER.isTracking = false;
+    LIVE_TIMER.isPaused = false;
+    LIVE_TIMER.startTime = null;
+    LIVE_TIMER.pausedTime = 0;
+    LIVE_TIMER.elapsedSeconds = 0;
+    LIVE_TIMER.currentSession = null;
+}
+
+// Update live UI
+function updateLiveUI() {
+    const statsBtn = document.querySelector('.timer-stats-btn');
+    const liveBadge = document.getElementById('liveTimerBadge');
+    const liveStatus = document.getElementById('liveStatus');
+    const liveTimerSection = document.getElementById('liveTimerSection');
+    
+    if (LIVE_TIMER.isTracking) {
+        if (statsBtn) {
+            if (LIVE_TIMER.isPaused) {
+                statsBtn.classList.add('bg-yellow-500/20');
+                statsBtn.classList.remove('live');
+            } else {
+                statsBtn.classList.add('live');
+                statsBtn.classList.remove('bg-yellow-500/20');
+            }
+        }
+        
+        if (liveBadge) {
+            liveBadge.style.display = 'flex';
+            liveBadge.innerHTML = LIVE_TIMER.isPaused ? 
+                '<i class="fas fa-pause"></i>' : 
+                '<i class="fas fa-play"></i>';
+        }
+        
+        if (liveStatus) {
+            liveStatus.classList.remove('hidden');
+            liveStatus.innerHTML = LIVE_TIMER.isPaused ?
+                '<i class="fas fa-pause"></i> متوقف' :
+                '<i class="fas fa-circle animate-pulse-slow"></i> مباشر';
+        }
+        
+        if (liveTimerSection) {
+            liveTimerSection.classList.remove('hidden');
+        }
+        
+    } else {
+        if (statsBtn) {
+            statsBtn.classList.remove('live', 'bg-yellow-500/20');
+        }
+        if (liveBadge) liveBadge.style.display = 'none';
+        if (liveStatus) liveStatus.classList.add('hidden');
+        if (liveTimerSection) liveTimerSection.classList.add('hidden');
+    }
+}
+
+// Show live timer badge
+function showLiveTimerBadge() {
+    const badge = document.getElementById('liveTimerBadge');
+    if (badge) {
+        badge.style.display = 'flex';
+        badge.classList.add('animate-pulse');
+    }
+}
+
+// Hide live timer badge
+function hideLiveTimerBadge() {
+    const badge = document.getElementById('liveTimerBadge');
+    if (badge) {
+        badge.style.display = 'none';
+        badge.classList.remove('animate-pulse');
+    }
+}
+
+// Start update interval
+function startUpdateInterval() {
+    if (LIVE_TIMER.updateInterval) {
+        clearInterval(LIVE_TIMER.updateInterval);
+    }
+    
+    LIVE_TIMER.updateInterval = setInterval(() => {
+        if (LIVE_TIMER.isTracking && !LIVE_TIMER.isPaused) {
+            const currentTime = Date.now();
+            const elapsed = currentTime - LIVE_TIMER.startTime - LIVE_TIMER.pausedTime;
+            LIVE_TIMER.elapsedSeconds = Math.floor(elapsed / 1000);
+            LIVE_TIMER.currentSession.elapsedSeconds = LIVE_TIMER.elapsedSeconds;
+            
+            updateCurrentSessionDisplay();
+        }
+    }, 1000);
+}
+
+// Update current session display
+function updateCurrentSessionDisplay() {
+    const currentSessionTime = document.getElementById('currentSessionTime');
+    
+    if (LIVE_TIMER.isTracking && LIVE_TIMER.currentSession) {
+        const elapsedSeconds = LIVE_TIMER.elapsedSeconds;
+        const hours = Math.floor(elapsedSeconds / 3600);
+        const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+        const seconds = elapsedSeconds % 60;
+        
+        const timeString = `${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
+        
+        if (currentSessionTime) {
+            currentSessionTime.textContent = timeString;
+        }
+    }
+}
+
+// Update live stats display
+function updateLiveStatsDisplay() {
+    updateTodayDate();
+    
+    const todayHours = Math.floor(LIVE_TIMER.today.totalSeconds / 3600);
+    const todayMinutes = Math.floor((LIVE_TIMER.today.totalSeconds % 3600) / 60);
+    const todaySeconds = LIVE_TIMER.today.totalSeconds % 60;
+    
+    if (document.getElementById('todayHours')) {
+        document.getElementById('todayHours').textContent = todayHours;
+        document.getElementById('todayMinutes').textContent = todayMinutes;
+        document.getElementById('todaySessionsCount').textContent = LIVE_TIMER.today.sessions;
+        document.getElementById('todaySeconds').textContent = `${todaySeconds} ثانية`;
+    }
+    
+    const totalHours = Math.floor(LIVE_TIMER.totalSeconds / 3600);
+    const totalMinutes = Math.floor((LIVE_TIMER.totalSeconds % 3600) / 60);
+    
+    if (document.getElementById('totalHours')) {
+        document.getElementById('totalHours').textContent = totalHours;
+        document.getElementById('totalMinutes').textContent = totalMinutes;
+        document.getElementById('totalSessions').textContent = LIVE_TIMER.totalSessions;
+        
+        if (LIVE_TIMER.firstRecordDate) {
+            const firstDate = new Date(LIVE_TIMER.firstRecordDate);
+            document.getElementById('firstRecordDate').textContent = 
+                firstDate.toLocaleDateString('ar-EG');
+        }
+    }
+    
+    if (document.getElementById('bestSessionTime')) {
+        document.getElementById('bestSessionTime').textContent = LIVE_TIMER.bestSession.time;
+        document.getElementById('bestSessionDate').textContent = LIVE_TIMER.bestSession.date || '-';
+    }
+    
+    if (document.getElementById('currentDate')) {
+        document.getElementById('currentDate').textContent = 
+            new Date().toLocaleDateString('ar-EG', { weekday: 'long' });
+    }
+}
+
+// Update today's date
+function updateTodayDate() {
+    const today = new Date().toLocaleDateString('ar-EG');
+    
+    if (LIVE_TIMER.today.date !== today) {
+        LIVE_TIMER.today = {
+            date: today,
+            totalSeconds: 0,
+            sessions: 0
+        };
+        saveLiveTimerData();
+    }
+}
+
+// Update sessions history
+function updateSessionsHistory() {
+    const sessionsList = document.getElementById('sessionsList');
+    if (!sessionsList) return;
+    
+    if (LIVE_TIMER.sessionHistory.length === 0) {
+        sessionsList.innerHTML = `
+            <div class="text-center py-4 opacity-50">
+                <i class="fas fa-clock text-2xl mb-2"></i>
+                <p>لا توجد جلسات مسجلة</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const recentSessions = LIVE_TIMER.sessionHistory.slice(0, 10);
+    let html = '';
+    
+    recentSessions.forEach((session, index) => {
+        const percentage = LIVE_TIMER.bestSession.seconds > 0 ? 
+            (session.totalSeconds / LIVE_TIMER.bestSession.seconds) * 100 : 0;
+        
+        html += `
+            <div class="session-item ${index === 0 ? 'active' : ''}" data-id="${session.id}">
+                <div class="session-header">
+                    <div class="session-time">${session.duration}</div>
+                    <div class="text-xs opacity-60">
+                        <span class="session-date">${session.displayDate}</span>
+                        <span class="mx-1">•</span>
+                        <span class="session-time">${session.displayTime}</span>
+                    </div>
+                </div>
+                <div class="session-duration">
+                    ${session.hours > 0 ? `${session.hours} ساعة ` : ''}
+                    ${session.minutes > 0 ? `${session.minutes} دقيقة ` : ''}
+                    ${session.seconds > 0 ? `${session.seconds} ثانية` : ''}
+                    ${index === 0 ? '<span class="session-badge">الأحدث</span>' : ''}
+                </div>
+                <div class="session-progress">
+                    <div class="session-progress-bar" style="width: ${Math.min(percentage, 100)}%"></div>
+                </div>
+            </div>
+        `;
+    });
+    
+    sessionsList.innerHTML = html;
+}
+
+// ============================================
+// DRAGGABLE PANEL SYSTEM
+// ============================================
+
+function initializeDraggablePanel() {
+    const panel = document.getElementById('timerStatsPanel');
+    const dragHandle = document.getElementById('statsPanelDragHandle');
+    
+    if (!panel || !dragHandle) return;
+    
+    loadPanelPosition();
+    setupDragEvents(panel, dragHandle);
+    setupClickOutsideToClose(panel);
+}
+
+function loadPanelPosition() {
+    try {
+        const saved = localStorage.getItem('statsPanelPosition');
+        if (saved) {
+            const position = JSON.parse(saved);
+            LIVE_TIMER.panelPosition = position;
+            
+            const panel = document.getElementById('timerStatsPanel');
+            if (panel) {
+                panel.style.left = `${position.x}px`;
+                panel.style.top = `${position.y}px`;
+            }
+        }
+    } catch (error) {
+        console.error("❌ خطأ في تحميل موضع اللوحة:", error);
+    }
+}
+
+function savePanelPosition() {
+    try {
+        localStorage.setItem('statsPanelPosition', JSON.stringify(LIVE_TIMER.panelPosition));
+    } catch (error) {
+        console.error("❌ خطأ في حفظ موضع اللوحة:", error);
+    }
+}
+
+function setupDragEvents(panel, dragHandle) {
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let panelStartX = 0;
+    let panelStartY = 0;
+    
+    dragHandle.addEventListener('mousedown', startDrag);
+    dragHandle.addEventListener('touchstart', startDragTouch);
+    
+    function startDrag(e) {
+        e.preventDefault();
+        isDragging = true;
+        
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        
+        const rect = panel.getBoundingClientRect();
+        panelStartX = rect.left;
+        panelStartY = rect.top;
+        
+        panel.classList.add('dragging');
+        document.body.style.userSelect = 'none';
+        
+        document.addEventListener('mousemove', doDrag);
+        document.addEventListener('mouseup', stopDrag);
+    }
+    
+    function startDragTouch(e) {
+        e.preventDefault();
+        isDragging = true;
+        
+        const touch = e.touches[0];
+        dragStartX = touch.clientX;
+        dragStartY = touch.clientY;
+        
+        const rect = panel.getBoundingClientRect();
+        panelStartX = rect.left;
+        panelStartY = rect.top;
+        
+        panel.classList.add('dragging');
+        
+        document.addEventListener('touchmove', doDragTouch);
+        document.addEventListener('touchend', stopDrag);
+    }
+    
+    function doDrag(e) {
+        if (!isDragging) return;
+        
+        e.preventDefault();
+        
+        const deltaX = e.clientX - dragStartX;
+        const deltaY = e.clientY - dragStartY;
+        
+        const newX = panelStartX + deltaX;
+        const newY = panelStartY + deltaY;
+        
+        const maxX = window.innerWidth - panel.offsetWidth;
+        const maxY = window.innerHeight - panel.offsetHeight;
+        
+        LIVE_TIMER.panelPosition.x = Math.max(0, Math.min(newX, maxX));
+        LIVE_TIMER.panelPosition.y = Math.max(0, Math.min(newY, maxY));
+        
+        panel.style.left = `${LIVE_TIMER.panelPosition.x}px`;
+        panel.style.top = `${LIVE_TIMER.panelPosition.y}px`;
+    }
+    
+    function doDragTouch(e) {
+        if (!isDragging) return;
+        
+        e.preventDefault();
+        
+        const touch = e.touches[0];
+        
+        const deltaX = touch.clientX - dragStartX;
+        const deltaY = touch.clientY - dragStartY;
+        
+        const newX = panelStartX + deltaX;
+        const newY = panelStartY + deltaY;
+        
+        const maxX = window.innerWidth - panel.offsetWidth;
+        const maxY = window.innerHeight - panel.offsetHeight;
+        
+        LIVE_TIMER.panelPosition.x = Math.max(0, Math.min(newX, maxX));
+        LIVE_TIMER.panelPosition.y = Math.max(0, Math.min(newY, maxY));
+        
+        panel.style.left = `${LIVE_TIMER.panelPosition.x}px`;
+        panel.style.top = `${LIVE_TIMER.panelPosition.y}px`;
+    }
+    
+    function stopDrag() {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        panel.classList.remove('dragging');
+        document.body.style.userSelect = '';
+        
+        document.removeEventListener('mousemove', doDrag);
+        document.removeEventListener('mouseup', stopDrag);
+        document.removeEventListener('touchmove', doDragTouch);
+        document.removeEventListener('touchend', stopDrag);
+        
+        savePanelPosition();
+    }
+}
+
+function setupClickOutsideToClose(panel) {
+    let clickOutsideTimeout = null;
+    
+    const originalToggleStatsPanel = window.toggleStatsPanel;
+    window.toggleStatsPanel = function() {
+        originalToggleStatsPanel();
+        
+        if (!panel.classList.contains('hidden')) {
+            const overlay = document.createElement('div');
+            overlay.className = 'panel-overlay active';
+            overlay.id = 'panelOverlay';
+            document.body.appendChild(overlay);
+            
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) {
+                    toggleStatsPanel();
+                }
+            });
+            
+            startAutoCloseTimer();
+        } else {
+            const overlay = document.getElementById('panelOverlay');
+            if (overlay) {
+                overlay.remove();
+            }
+            clearAutoCloseTimer();
+        }
+    };
+    
+    function startAutoCloseTimer() {
+        clearAutoCloseTimer();
+        clickOutsideTimeout = setTimeout(() => {
+            if (!panel.classList.contains('hidden')) {
+                toggleStatsPanel();
+                showToast('تم إغلاق لوحة الإحصائيات تلقائياً', 'info');
+            }
+        }, 30000);
+    }
+    
+    function clearAutoCloseTimer() {
+        if (clickOutsideTimeout) {
+            clearTimeout(clickOutsideTimeout);
+            clickOutsideTimeout = null;
+        }
+    }
+    
+    panel.addEventListener('mousedown', clearAutoCloseTimer);
+    panel.addEventListener('touchstart', clearAutoCloseTimer);
+    panel.addEventListener('scroll', clearAutoCloseTimer);
+    panel.addEventListener('mouseleave', startAutoCloseTimer);
+}
+
+// ============================================
+// INTEGRATION WITH MAIN TIMER
+// ============================================
+
+function integrateWithMainTimer() {
+    let lastTimerState = APP_STATE.isRunning;
+    
+    setInterval(() => {
+        if (APP_STATE.isRunning && !lastTimerState) {
+            startLiveTracking();
+        }
+        
+        if (!APP_STATE.isRunning && lastTimerState) {
+            endCurrentSession();
+        }
+        
+        if (APP_STATE.isFinished) {
+            endCurrentSession();
+        }
+        
+        lastTimerState = APP_STATE.isRunning;
+        
+    }, 1000);
+    
+    const originalStartTimer = window.startTimer;
+    window.startTimer = function() {
+        if (originalStartTimer) originalStartTimer();
+        startLiveTracking();
+    };
+    
+    const originalPauseTimer = window.pauseTimer;
+    window.pauseTimer = function() {
+        if (originalPauseTimer) originalPauseTimer();
+        pauseLiveTracking();
+    };
+    
+    const originalResetTimer = window.resetTimer;
+    window.resetTimer = function() {
+        if (originalResetTimer) originalResetTimer();
+        endCurrentSession();
+    };
+}
+
+// ============================================
+// UI CONTROLS
+// ============================================
+
+function toggleStatsPanel() {
+    const panel = document.getElementById('timerStatsPanel');
+    if (panel) {
+        if (panel.classList.contains('hidden')) {
+            panel.classList.remove('hidden');
+            panel.classList.add('animate-slide-up');
+            updateLiveStatsDisplay();
+            updateSessionsHistory();
+            updateCurrentSessionDisplay();
+        } else {
+            panel.classList.add('hidden');
+            panel.classList.remove('animate-slide-up');
+            
+            const overlay = document.getElementById('panelOverlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+    }
+}
+
+function refreshSessions() {
+    updateLiveStatsDisplay();
+    updateSessionsHistory();
+    showToast('تم تحديث الجلسات', 'info');
+}
+
+function clearTodaySessions() {
+    Swal.fire({
+        title: 'مسح جلسات اليوم؟',
+        text: 'هل تريد حذف جميع جلسات اليوم؟',
+        icon: 'warning',
+        background: '#0f172a',
+        color: '#f8fafc',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، امسحها',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const todayDate = new Date().toLocaleDateString('ar-EG');
+            const initialCount = LIVE_TIMER.sessions.length;
+            
+            LIVE_TIMER.sessions = LIVE_TIMER.sessions.filter(session => {
+                const sessionDate = new Date(session.date).toLocaleDateString('ar-EG');
+                return sessionDate !== todayDate;
+            });
+            
+            LIVE_TIMER.sessionHistory = LIVE_TIMER.sessions.slice(0, 20);
+            LIVE_TIMER.today.totalSeconds = 0;
+            LIVE_TIMER.today.sessions = 0;
+            
+            saveLiveTimerData();
+            updateLiveStatsDisplay();
+            updateSessionsHistory();
+            
+            const removedCount = initialCount - LIVE_TIMER.sessions.length;
+            showToast(`تم مسح ${removedCount} جلسة من اليوم`, 'success');
+        }
+    });
+}
+
+function clearAllSessions() {
+    Swal.fire({
+        title: 'مسح جميع الجلسات؟',
+        text: 'هذا سيحذف جميع سجلات التايمر ولا يمكن التراجع عنه!',
+        icon: 'error',
+        background: '#0f172a',
+        color: '#f8fafc',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، امسح الكل',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const sessionCount = LIVE_TIMER.sessions.length;
+            
+            LIVE_TIMER.sessions = [];
+            LIVE_TIMER.sessionHistory = [];
+            LIVE_TIMER.totalSeconds = 0;
+            LIVE_TIMER.totalSessions = 0;
+            LIVE_TIMER.firstRecordDate = null;
+            LIVE_TIMER.bestSession = {
+                seconds: 0,
+                time: "00:00:00",
+                date: null
+            };
+            
+            LIVE_TIMER.today = {
+                date: new Date().toLocaleDateString('ar-EG'),
+                totalSeconds: 0,
+                sessions: 0
+            };
+            
+            saveLiveTimerData();
+            updateLiveStatsDisplay();
+            updateSessionsHistory();
+            
+            showToast(`تم مسح ${sessionCount} جلسة`, 'success');
+        }
+    });
+}
+
+function exportSessionsData() {
+    if (LIVE_TIMER.sessions.length === 0) {
+        showToast('لا توجد جلسات لتصديرها', 'warning');
+        return;
+    }
+    
+    const exportData = {
+        app: 'ProTimer Live Tracker',
+        version: '2.2.0',
+        exportDate: new Date().toISOString(),
+        totalSessions: LIVE_TIMER.totalSessions,
+        totalTime: {
+            seconds: LIVE_TIMER.totalSeconds,
+            hours: Math.floor(LIVE_TIMER.totalSeconds / 3600),
+            minutes: Math.floor((LIVE_TIMER.totalSeconds % 3600) / 60)
+        },
+        bestSession: LIVE_TIMER.bestSession,
+        todayStats: LIVE_TIMER.today,
+        sessions: LIVE_TIMER.sessions.map(session => ({
+            date: session.displayDate,
+            time: session.displayTime,
+            duration: session.duration,
+            hours: session.hours,
+            minutes: session.minutes,
+            seconds: session.seconds,
+            totalSeconds: session.totalSeconds
+        }))
+    };
+    
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `protimer-sessions-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showToast(`تم تصدير ${LIVE_TIMER.sessions.length} جلسة`, 'success');
+}
+
+// ============================================
+// FOCUS MODE INTEGRATION
+// ============================================
+
+function integrateWithFocusMode() {
+    setInterval(() => {
+        const isFocusMode = document.body.classList.contains('focus-mode');
+        const statsWidget = document.getElementById('timerStatsWidget');
+        const statsPanel = document.getElementById('timerStatsPanel');
+        
+        if (isFocusMode) {
+            if (statsWidget) {
+                statsWidget.style.opacity = '0';
+                statsWidget.style.visibility = 'hidden';
+                statsWidget.style.pointerEvents = 'none';
+                statsWidget.style.transform = 'translateY(100%)';
+            }
+            if (statsPanel) {
+                statsPanel.classList.add('hidden');
+                const overlay = document.getElementById('panelOverlay');
+                if (overlay) {
+                    overlay.remove();
+                }
+            }
+        } else {
+            if (statsWidget) {
+                statsWidget.style.opacity = '';
+                statsWidget.style.visibility = '';
+                statsWidget.style.pointerEvents = '';
+                statsWidget.style.transform = '';
+            }
+        }
+    }, 500);
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
+// Helper function for time formatting
+function formatTime(num) {
+    return num.toString().padStart(2, '0');
+}
+
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Remove tasks button from control panel
+    setTimeout(() => {
+        const tasksBtn = document.getElementById('quickTasksBtn');
+        if (tasksBtn) {
+            tasksBtn.style.display = 'none';
+            tasksBtn.remove();
+        }
+        
+        const tasksPanel = document.getElementById('quickTasksPanel');
+        if (tasksPanel) {
+            tasksPanel.remove();
+        }
+    }, 1000);
+    
+    // Initialize all systems
+    setTimeout(initializeAutoSaveSystem, 500);
+    setTimeout(initializeContextMenu, 1000);
+    setTimeout(initializeLiveTimer, 1500);
+    setTimeout(integrateWithFocusMode, 2000);
+    
+    // Show welcome message
+    setTimeout(() => {
+        applySettings();
+        showToast('ProTimer جاهز! انقر بزر الماوس الأيمن للتحكم السريع', 'success');
+    }, 2500);
+    
+    // Ensure everything saves when page closes
+    window.addEventListener('pagehide', saveAllData);
+    
+    console.log("✨ ProTimer Enhanced v2.2.0 - Ready!");
+});
+</script>
 </body>
-</html>
+</html> 
