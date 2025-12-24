@@ -11932,5 +11932,162 @@ console.log("✅ النظام جاهز - الإعدادات تفتح يدويا�
     });
 })();
 </script>
+<script>
+// ============================================
+// نظام التنبيهات الصوتية المتكامل (آخر 10 ثوانٍ + النهاية)
+// ============================================
+(function() {
+    // 1. إضافة خيار التحكم في الإعدادات برمجياً
+    setInterval(() => {
+        const audioSettingsContent = document.querySelector('[data-tab-content="audio"]');
+        if (audioSettingsContent && !document.getElementById('nearFinishAlertContainer')) {
+            const settingHTML = `
+                <div id="nearFinishAlertContainer" class="flex items-center justify-between p-3 bg-white/5 rounded-lg mb-2">
+                    <div class="flex flex-col">
+                        <span class="font-medium">تنبيه آخر 10 ثوانٍ</span>
+                        <span class="text-xs opacity-50">تشغيل صوت "تيك" تصاعدي</span>
+                    </div>
+                    <div id="nearFinishSoundToggle" class="toggle-switch ${APP_STATE.settings.nearFinishAlertEnabled ? 'active' : ''}" 
+                         onclick="this.classList.toggle('active'); APP_STATE.settings.nearFinishAlertEnabled = this.classList.contains('active'); saveToLocalStorage();">
+                        <div class="toggle-switch-handle"></div>
+                    </div>
+                </div>`;
+            audioSettingsContent.insertAdjacentHTML('afterbegin', settingHTML);
+        }
+    }, 1000);
+
+    // 2. دالة توليد الأصوات (تغنيك عن ملفات خارجية لضمان العمل دائماً)
+    function playBeep(freq, duration, vol) {
+        if (!APP_STATE.settings.audioEnabled) return;
+        try {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = context.createOscillator();
+            const gain = context.createGain();
+            osc.connect(gain);
+            gain.connect(context.destination);
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(vol / 100, context.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + duration);
+            osc.start();
+            osc.stop(context.currentTime + duration);
+        } catch(e) { console.error("Sound error:", e); }
+    }
+
+    // 3. مراقبة التايمر وتشغيل الأصوات
+    let lastSecondHandled = -1;
+    
+    // حقن المنطق داخل حلقة التحديث الرئيسية
+    const originalUpdateDisplay = window.updateDisplay;
+    window.updateDisplay = function() {
+        if (originalUpdateDisplay) originalUpdateDisplay();
+        
+        const secondsLeft = APP_STATE.remainingSeconds;
+        
+        // منع تكرار الصوت في نفس الثانية
+        if (secondsLeft === lastSecondHandled) return;
+        lastSecondHandled = secondsLeft;
+
+        if (APP_STATE.isRunning && !APP_STATE.isFinished) {
+            // تنبيه آخر 10 ثوانٍ
+            if (secondsLeft <= 10 && secondsLeft > 0 && APP_STATE.settings.nearFinishAlertEnabled) {
+                // تزداد حدة الصوت كلما اقتربنا من الصفر
+                const pitch = 800 + ((10 - secondsLeft) * 50); 
+                playBeep(pitch, 0.1, APP_STATE.settings.audioVolume);
+            }
+            
+            // تنبيه النهاية (عند الوصول للصفر)
+            if (secondsLeft === 0) {
+                playBeep(1200, 0.5, APP_STATE.settings.audioVolume);
+                setTimeout(() => playBeep(1200, 0.8, APP_STATE.settings.audioVolume), 600);
+            }
+        }
+    };
+})();
+</script>
+<script>
+/**
+ * نظام دعم التطبيقات (Desktop App Support) والتحكم في صوت فيديو الخلفية
+ */
+(function() {
+    // 1. إضافة خيار الصوت في قائمة الإعدادات
+    function injectVideoSoundSetting() {
+        const audioTab = document.querySelector('[data-tab-content="audio"]');
+        if (audioTab && !document.getElementById('video_sound_setting_row')) {
+            const isVideoMuted = localStorage.getItem('bg_video_muted') === 'true';
+            const rowHTML = `
+                <div id="video_sound_setting_row" class="flex items-center justify-between p-3 bg-white/5 rounded-lg mb-2">
+                    <div class="flex flex-col">
+                        <span class="font-medium">صوت فيديو الخلفية</span>
+                        <span class="text-xs opacity-50">تشغيل الصوت للفيديو الحالي</span>
+                    </div>
+                    <div id="videoSoundToggle" class="toggle-switch ${!isVideoMuted ? 'active' : ''}" 
+                         onclick="toggleBgVideoSound(this)">
+                        <div class="toggle-switch-handle"></div>
+                    </div>
+                </div>`;
+            audioTab.insertAdjacentHTML('beforeend', rowHTML);
+        }
+    }
+    setInterval(injectVideoSoundSetting, 1000);
+
+    // 2. دالة تبديل الصوت
+    window.toggleBgVideoSound = function(el) {
+        el.classList.toggle('active');
+        const isMuted = !el.classList.contains('active');
+        localStorage.setItem('bg_video_muted', isMuted);
+        
+        // تحديث الفيديو الحالي فوراً
+        const ytIframe = document.getElementById('proYoutubeBackground');
+        if (ytIframe && ytIframe.src) {
+            let url = new URL(ytIframe.src);
+            url.searchParams.set('mute', isMuted ? '1' : '0');
+            ytIframe.src = url.toString();
+        }
+    };
+
+    // 3. تعديل دالة اليوتيوب لتعمل كـ Desktop App
+    const originalSetVideoSource = window.setVideoSource;
+    window.setVideoSource = function(url) {
+        if (!url) return;
+        
+        const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
+        const ytIframe = document.getElementById('proYoutubeBackground');
+        const vTag = document.getElementById('proVideoBackground');
+        const container = document.getElementById('bgVideoContainer');
+        const isMuted = localStorage.getItem('bg_video_muted') !== 'false'; // افتراضياً مكتوم
+
+        if (ytIdMatch) {
+            const videoId = ytIdMatch[1];
+            vTag.style.display = 'none';
+            ytIframe.style.display = 'block';
+            
+            // الرابط السحري الذي يعمل داخل التطبيقات (DMG/MSI)
+            // نستخدم nocookie ونمرر الـ Origin لفك حظر التشغيل
+            const desktopFriendlyUrl = `https://www.youtube-nocookie.com/embed/${videoId}?` + 
+                `autoplay=1&mute=${isMuted ? 1 : 0}&loop=1&playlist=${videoId}` +
+                `&controls=0&showinfo=0&rel=0&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+            
+            ytIframe.src = desktopFriendlyUrl;
+            container.style.display = 'block';
+            
+            // حفظ الرابط الأخير للتشغيل عند إعادة الفتح
+            localStorage.setItem('last_video_url', url);
+        } else if (originalSetVideoSource) {
+            // إذا لم يكن يوتيوب، نستخدم الدالة الأصلية للملفات المحلية
+            originalSetVideoSource(url);
+        }
+    };
+
+    // 4. إصلاح مشكلة الـ Autoplay في التطبيقات
+    // بعض التطبيقات تمنع الفيديو حتى يتفاعل المستخدم مع الشاشة
+    document.addEventListener('mousedown', function() {
+        const ytIframe = document.getElementById('proYoutubeBackground');
+        if (ytIframe && ytIframe.contentWindow) {
+            ytIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        }
+    }, { once: true });
+
+})();
+</script>
 </body>
 </html> 
