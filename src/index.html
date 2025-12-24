@@ -12177,5 +12177,33 @@ console.log("✅ النظام جاهز - الإعدادات تفتح يدويا�
 
 })();
 </script>
+window.setVideoSource = function(url) {
+    if (url.includes('youtube.com') || url.includes('youtube-nocookie.com')) {
+        const videoId = url.match(/(?:embed\/|v=)([^?&]+)/)?.[1];
+        if (!videoId) return;
+
+        const ytIframe = document.getElementById('proYoutubeBackground');
+        const vTag = document.getElementById('proVideoBackground');
+        const container = document.getElementById('bgVideoContainer');
+
+        vTag.style.display = 'none';
+        ytIframe.style.display = 'block';
+        
+        // 🛠️ تعديل ذكي للماك:
+        // بنشيل الـ origin خالص عشان يوتيوب ميعملش بلوك
+        // وبنجبر الـ mute=1 عشان الماك يرضى يشغل الفيديو أوتوماتيك
+        const isMuted = localStorage.getItem('bgVideoMuted') === 'true';
+        
+        const desktopUrl = `https://www.youtube-nocookie.com/embed/${videoId}?` + 
+            `autoplay=1&mute=1&loop=1&playlist=${videoId}` +
+            `&controls=0&showinfo=0&rel=0&enablejsapi=1`; // شيلنا الـ origin هنا للكل عشان تضمن إنه يشتغل
+        
+        ytIframe.src = desktopUrl;
+        container.style.display = 'block';
+    } else {
+        // لو ملف فيديو عادي (mp4)
+        originalSetVideoSource(url);
+    }
+};
 </body>
 </html> 
