@@ -9181,7 +9181,9 @@ console.log("✨ ProTimer Enhanced System Loaded Successfully!");
 
 
 </script>
-<!-- أضف هذا الكود في نهاية HTML قبل </body> -->
+<!-- ============================================ -->
+<!-- COMPLETE RIGHT-CLICK & TASKS SYSTEM -->
+<!-- ============================================ -->
 
 <!-- Right-Click Context Menu -->
 <div id="contextMenu" class="fixed hidden z-[9999] glass-dark rounded-xl p-2 shadow-2xl border border-white/10 min-w-[200px]">
@@ -9380,6 +9382,65 @@ console.log("✨ ProTimer Enhanced System Loaded Successfully!");
     <div class="mt-3 text-xs opacity-50 text-center panel-footer">
         <i class="fas fa-arrows-alt mr-1"></i>
         اسحب العنوان لتحريك اللوحة
+    </div>
+</div>
+
+<!-- Quick Tasks Panel -->
+<div id="quickTasksPanel" class="quick-tasks-panel">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold">📝 المهام السريعة</h3>
+        <button onclick="toggleQuickTasks()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors touch-feedback">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <!-- Add New Task -->
+    <div class="mb-4">
+        <div class="flex gap-2">
+            <input type="text" id="newTaskInput" placeholder="اكتب مهمة جديدة..." class="input-field flex-1 text-sm" onkeypress="handleTaskInputKeyPress(event)">
+            <button onclick="addNewTask()" class="btn-primary px-4 py-2 text-sm touch-feedback">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+        <div class="flex gap-2 mt-2">
+            <button onclick="addQuickTask('قراءة')" class="btn-secondary text-xs px-3 py-1 flex-1 touch-feedback">
+                قراءة
+            </button>
+            <button onclick="addQuickTask('دراسة')" class="btn-secondary text-xs px-3 py-1 flex-1 touch-feedback">
+                دراسة
+            </button>
+            <button onclick="addQuickTask('عمل')" class="btn-secondary text-xs px-3 py-1 flex-1 touch-feedback">
+                عمل
+            </button>
+        </div>
+    </div>
+    
+    <!-- Tasks List -->
+    <div id="tasksList" class="flex-1 overflow-y-auto max-h-60">
+        <div class="text-center py-8 opacity-50">
+            <i class="fas fa-tasks text-3xl mb-3"></i>
+            <p>لا توجد مهام بعد</p>
+            <p class="text-sm mt-2">أضف مهام لتتبع أنشطتك</p>
+        </div>
+    </div>
+    
+    <!-- Tasks Footer -->
+    <div class="tasks-footer mt-4">
+        <div class="flex justify-between items-center text-sm opacity-70">
+            <span id="tasksCount">0 مهام</span>
+            <div class="flex gap-2">
+                <button onclick="clearCompletedTasks()" class="text-red-300 hover:text-red-400 touch-feedback text-xs">
+                    مسح المكتملة
+                </button>
+                <button onclick="exportTasks()" class="text-blue-300 hover:text-blue-400 touch-feedback text-xs">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        <div class="mt-2 text-xs opacity-50 text-center">
+            <i class="fas fa-info-circle mr-1"></i>
+            اضغط على المهمة لتحديدها كمنتهية
+        </div>
     </div>
 </div>
 
@@ -9633,6 +9694,158 @@ body.focus-mode #timerStatsPanel {
 @keyframes fadeInOut {
     0%, 100% { opacity: 0; transform: translateY(10px); }
     20%, 80% { opacity: 1; transform: translateY(0); }
+}
+
+/* Quick Tasks Panel */
+.quick-tasks-panel {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 20px;
+    width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 100;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.quick-tasks-panel.show {
+    display: flex;
+    animation: slideUp 0.3s ease-out;
+}
+
+.task-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+.task-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+}
+
+.task-item.completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.task-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    flex: 1;
+}
+
+.task-time {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-left: 8px;
+}
+
+.task-description {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    line-height: 1.4;
+    margin-top: 5px;
+}
+
+.task-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.task-action-btn {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.task-action-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.task-action-btn.complete {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.task-action-btn.complete:hover {
+    background: rgba(16, 185, 129, 0.3);
+}
+
+.task-action-btn.delete {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.task-action-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.3);
+}
+
+.task-priority {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    margin-left: 6px;
+}
+
+.priority-high {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.priority-medium {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.priority-low {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+}
+
+.tasks-footer {
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Hide tasks in focus mode */
+body.focus-mode #quickTasksPanel,
+body.focus-mode #quickTasksBtn {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 </style>
 
@@ -10799,7 +11012,6 @@ function integrateWithFocusMode() {
         }
     }, 500);
 }
-
 // ============================================
 // INITIALIZATION
 // ============================================
@@ -10842,6 +11054,703 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log("✨ ProTimer Enhanced v2.2.0 - Ready!");
 });
+</script>
+<script>
+/**
+ * نظام التخزين العملاق (IndexedDB Video System) 🚀
+ * يحل مشكلة: المساحة، اختفاء الفيديو، ثقل الموقع، وحفظ الإعدادات
+ */
+const ProMediaDB = {
+    dbName: "ProTimerBigMedia",
+    storeName: "files",
+
+    // 1. فتح مخزن الملفات في الجهاز
+    init() {
+        return new Promise((resolve) => {
+            const request = indexedDB.open(this.dbName, 1);
+            request.onupgradeneeded = (e) => e.target.result.createObjectStore(this.storeName);
+            request.onsuccess = (e) => resolve(e.target.result);
+        });
+    },
+
+    // 2. حفظ ملف الفيديو (بدون حد أقصى للمساحة)
+    async saveVideo(file) {
+        const db = await this.init();
+        const tx = db.transaction(this.storeName, "readwrite");
+        tx.objectStore(this.storeName).put(file, "bg_video");
+        console.log("✅ تم حفظ الفيديو في مساحة الجهاز المستقلة");
+    },
+
+    // 3. جلب الفيديو وتشغيله
+    async loadVideo() {
+        const db = await this.init();
+        const tx = db.transaction(this.storeName, "readonly");
+        const request = tx.objectStore(this.storeName).get("bg_video");
+        
+        request.onsuccess = () => {
+            const blob = request.result;
+            if (blob) {
+                const url = URL.createObjectURL(blob);
+                this.render(url);
+            }
+        };
+    },
+
+    // 4. وضع الفيديو في الخلفية
+    render(url) {
+        const container = document.getElementById('mediaBackground');
+        if (!container) return;
+        container.innerHTML = `
+            <video autoplay loop muted playsinline webkit-playsinline
+                   style="width:100%; height:100%; object-fit:cover; position:absolute; inset:0; z-index:-1;">
+                <source src="${url}">
+            </video>`;
+        const v = container.querySelector('video');
+        v.play().catch(() => {
+            document.addEventListener('click', () => v.play(), { once: true });
+        });
+    }
+};
+
+// اعتراض عملية الرفع الأصلية لتوجيهها للمخزن الجديد
+const fileInput = document.getElementById('mediaUrl');
+if (fileInput) {
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('video/')) {
+            // حفظ الفيديو في المخزن الكبير
+            await ProMediaDB.saveVideo(file);
+            // تشغيله فوراً
+            ProMediaDB.loadVideo();
+            // مسح القيمة من الـ Input عشان ميتحفظش في الـ LocalStorage ويقلل المساحة
+            setTimeout(() => { 
+                if(APP_STATE) APP_STATE.settings.mediaUrl = ""; 
+                saveAllSettings(); 
+            }, 500);
+        }
+    });
+}
+
+// تشغيل الفيديو عند فتح التطبيق
+window.addEventListener('load', () => {
+    setTimeout(() => ProMediaDB.loadVideo(), 800);
+});
+
+// ضمان عدم التوقف في الخلفية
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        const v = document.querySelector('video');
+        if (v) v.play();
+    }
+});
+// ======================================================
+// PRO-TASKS V23 - FULL ENTER SUPPORT & UNIFIED UI
+// ======================================================
+
+const TASKS_V23 = {
+    data: JSON.parse(localStorage.getItem('pro_ledger_v23')) || { days: {} },
+    isOpen: false,
+    filter: 'all',
+    pos: JSON.parse(localStorage.getItem('task_pos_v23')) || { y: window.innerHeight / 2 }
+};
+
+// الستايلات المخصصة (Glassmorphism)
+const styleV23 = document.createElement('style');
+styleV23.innerHTML = `
+    .glass-overlay-v23 {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6); backdrop-filter: blur(12px);
+        display: flex; align-items: center; justify-content: center; z-index: 10005;
+        opacity: 0; transition: all 0.3s ease; border-radius: 3rem;
+    }
+    .glass-box-v23 {
+        background: rgba(15, 23, 42, 0.95); width: 85%; padding: 2rem;
+        border-radius: 2.5rem; border: 1px solid rgba(255,255,255,0.1);
+        transform: scale(0.8); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.6); text-align: center;
+    }
+    .glass-overlay-v23.show { opacity: 1; }
+    .glass-overlay-v23.show .glass-box-v23 { transform: scale(1); }
+    
+    .glass-input-v23 {
+        width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+        padding: 15px; border-radius: 18px; color: white; outline: none; margin: 20px 0;
+        font-size: 14px; text-align: center; transition: all 0.3s;
+    }
+    .glass-input-v23:focus { border-color: #6366f1; background: rgba(255,255,255,0.1); box-shadow: 0 0 15px rgba(99,102,241,0.2); }
+    
+    .glass-btn-primary { background: #6366f1; color: white; padding: 12px 30px; border-radius: 15px; font-size: 11px; font-weight: 900; cursor: pointer; border: none; transition: 0.3s; letter-spacing: 1px; }
+    .glass-btn-primary:hover { background: #4f46e5; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4); }
+    .glass-btn-close { background: transparent; color: #64748b; padding: 10px; font-size: 11px; font-weight: bold; cursor: pointer; border: none; }
+`;
+document.head.appendChild(styleV23);
+
+function initProTasksV23() {
+    const today = new Date().toLocaleDateString('en-GB');
+    if (!TASKS_V23.data.days[today]) TASKS_V23.data.days[today] = [];
+
+    if (!document.getElementById('taskFab')) {
+        const fab = document.createElement('button');
+        fab.id = 'taskFab';
+        fab.className = 'fixed left-0 w-8 h-28 bg-indigo-600 text-white rounded-r-3xl shadow-2xl flex items-center justify-center z-[9999] transition-all hover:w-10 border-y border-r border-white/20 cursor-pointer';
+        fab.style.top = TASKS_V23.pos.y + 'px';
+        fab.innerHTML = '<i class="fas fa-chevron-right text-xs"></i>';
+        fab.onclick = toggleLedger;
+        document.body.appendChild(fab);
+        makeDraggableV23(fab);
+    }
+
+    if (!document.getElementById('ledgerPanel')) {
+        const panel = document.createElement('div');
+        panel.id = 'ledgerPanel';
+        panel.className = 'fixed top-4 left-[-500px] bottom-4 w-[430px] bg-slate-950/98 backdrop-blur-3xl border border-white/10 rounded-[3rem] z-[10001] transition-all duration-700 shadow-[30px_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden text-slate-100';
+        panel.innerHTML = `
+            <div id="unifiedModalContainer"></div>
+            <div class="p-8 bg-gradient-to-br from-indigo-600/10 to-transparent border-b border-white/5">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-xl font-black italic tracking-tighter uppercase">Ledger Hub</h3>
+                        <p class="text-[9px] text-indigo-400 font-mono tracking-widest">${today}</p>
+                    </div>
+                    <button onclick="toggleLedger()" class="w-10 h-10 rounded-2xl bg-white/5 hover:bg-red-500/20 flex items-center justify-center"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="bg-white/5 p-2 pl-4 rounded-2xl border border-white/10 flex items-center gap-2 mb-4 focus-within:border-indigo-500/50 transition-all">
+                    <input type="text" id="fastInput" placeholder="Add primary objective..." class="flex-1 bg-transparent border-none outline-none text-sm text-white py-1">
+                    <button onclick="addMajorTask()" class="w-9 h-9 bg-indigo-600 rounded-xl hover:bg-indigo-500 transition-all active:scale-90"><i class="fas fa-plus text-xs"></i></button>
+                </div>
+                <div class="flex gap-2 p-1 bg-black/30 rounded-xl text-[8px] font-bold uppercase">
+                    <button onclick="setFilter('all')" id="f-all" class="flex-1 py-2 rounded-lg bg-indigo-600 transition-all">All</button>
+                    <button onclick="setFilter('pending')" id="f-pending" class="flex-1 py-2 rounded-lg transition-all">Active</button>
+                    <button onclick="setFilter('completed')" id="f-completed" class="flex-1 py-2 rounded-lg transition-all">Done</button>
+                </div>
+            </div>
+            <div id="ledgerList" class="flex-1 overflow-y-auto px-6 py-6 space-y-4 custom-scrollbar relative"></div>
+        `;
+        document.body.appendChild(panel);
+
+        // دعم الـ Enter في خانة الإضافة الرئيسية
+        document.getElementById('fastInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addMajorTask();
+        });
+    }
+    renderLedger();
+    syncV23();
+}
+
+function openUnifiedModal(config) {
+    const container = document.getElementById('unifiedModalContainer');
+    container.innerHTML = `
+        <div class="glass-overlay-v23" id="v23Overlay">
+            <div class="glass-box-v23">
+                <h5 class="text-[10px] font-black tracking-[4px] text-indigo-400 uppercase">${config.title}</h5>
+                <input type="text" id="v23Field" class="glass-input-v23" value="${config.value || ''}" placeholder="${config.placeholder || ''}" autocomplete="off">
+                <div class="flex justify-center gap-4">
+                    <button class="glass-btn-close" onclick="closeUnifiedModal()">CANCEL</button>
+                    <button class="glass-btn-primary" id="v23ConfirmBtn">${config.confirmText || 'SAVE'}</button>
+                </div>
+            </div>
+        </div>
+    `;
+    const overlay = document.getElementById('v23Overlay');
+    const field = document.getElementById('v23Field');
+    const btn = document.getElementById('v23ConfirmBtn');
+
+    setTimeout(() => overlay.classList.add('show'), 10);
+    field.focus();
+    field.select(); // تحديد النص تلقائياً ليسهل التعديل
+
+    const handleAction = () => {
+        if (field.value.trim()) {
+            config.onConfirm(field.value.trim());
+            closeUnifiedModal();
+        }
+    };
+
+    btn.onclick = handleAction;
+    field.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleAction();
+        }
+    };
+}
+
+function closeUnifiedModal() {
+    const overlay = document.getElementById('v23Overlay');
+    if(overlay) {
+        overlay.classList.remove('show');
+        setTimeout(() => overlay.remove(), 300);
+    }
+}
+
+function addMajorTask() {
+    const inp = document.getElementById('fastInput');
+    if (!inp.value.trim()) return;
+    const today = new Date().toLocaleDateString('en-GB');
+    TASKS_V23.data.days[today].unshift({ 
+        id: Date.now(), 
+        text: inp.value.trim(), 
+        subtasks: [], 
+        done: false, 
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+    });
+    saveLedger(); 
+    inp.value = '';
+}
+
+function renderLedger() {
+    const list = document.getElementById('ledgerList');
+    list.innerHTML = '';
+    const days = Object.keys(TASKS_V23.data.days).sort((a,b) => {
+        const dateA = a.split('/').reverse().join('');
+        const dateB = b.split('/').reverse().join('');
+        return dateB.localeCompare(dateA);
+    });
+    
+    days.forEach(day => {
+        const tasks = TASKS_V23.data.days[day].filter(t => {
+            if (TASKS_V23.filter === 'pending') return !t.done;
+            if (TASKS_V23.filter === 'completed') return t.done;
+            return true;
+        });
+        if (tasks.length === 0) return;
+
+        list.innerHTML += `<div class="text-[9px] font-black text-indigo-500/40 mb-3 tracking-widest uppercase flex items-center gap-2">${day} <div class="h-[1px] flex-1 bg-white/5"></div></div>`;
+
+        tasks.forEach(t => {
+            const isDone = t.done;
+            list.innerHTML += `
+                <div class="${isDone ? 'bg-emerald-600/70 border-emerald-400 shadow-lg shadow-emerald-500/10' : 'bg-white/[0.03] border-white/5'} border p-5 rounded-[2.5rem] group relative mb-4 transition-all hover:bg-white/[0.05]">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[8px] opacity-40 font-mono italic">${t.time}</span>
+                        <div class="flex gap-4 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
+                            <button onclick="editItemV23('major', ${t.id}, '${day}')"><i class="fas fa-pen text-[10px] hover:text-indigo-400"></i></button>
+                            <button onclick="addSubV23(${t.id}, '${day}')"><i class="fas fa-list-ul text-[10px] hover:text-indigo-400"></i></button>
+                            <button onclick="toggleMajor(${t.id}, '${day}')"><i class="fas fa-check-double text-[10px] hover:text-emerald-400"></i></button>
+                            <button onclick="deleteTask(${t.id}, '${day}')"><i class="fas fa-trash-alt text-[10px] hover:text-red-400"></i></button>
+                        </div>
+                    </div>
+                    <h4 class="text-sm font-bold ${isDone ? 'line-through text-white/60' : 'text-white'}">${t.text}</h4>
+                    <div class="mt-3 space-y-2">
+                        ${t.subtasks.map(s => `
+                            <div class="flex items-center gap-3 bg-black/20 p-2.5 px-4 rounded-2xl group/sub border border-white/5 transition-all hover:border-white/20">
+                                <i onclick="toggleSub(${t.id}, ${s.id}, '${day}')" class="fas ${s.done ? 'fa-check-circle text-emerald-400' : 'fa-circle text-white/5'} cursor-pointer text-[10px]"></i>
+                                <span class="text-[11px] flex-1 ${s.done ? 'line-through opacity-40' : 'text-slate-200'}">${s.text}</span>
+                                <button onclick="editItemV23('sub', ${t.id}, '${day}', ${s.id})" class="opacity-0 group-hover/sub:opacity-100 transition-all hover:text-indigo-400"><i class="fas fa-pen text-[9px]"></i></button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        });
+    });
+}
+
+function addSubV23(taskId, day) {
+    openUnifiedModal({
+        title: 'Tactical Step',
+        placeholder: 'What is the next step?',
+        confirmText: 'ADD TO MISSION',
+        onConfirm: (val) => {
+            const task = TASKS_V23.data.days[day].find(t => t.id === taskId);
+            task.subtasks.push({ id: Date.now(), text: val, done: false });
+            task.done = false;
+            saveLedger();
+        }
+    });
+}
+
+function editItemV23(type, taskId, day, subId = null) {
+    const task = TASKS_V23.data.days[day].find(t => t.id === taskId);
+    let oldVal = type === 'major' ? task.text : task.subtasks.find(s => s.id === subId).text;
+    
+    openUnifiedModal({
+        title: 'Edit Mission',
+        value: oldVal,
+        confirmText: 'UPDATE',
+        onConfirm: (val) => {
+            if (type === 'major') task.text = val;
+            else task.subtasks.find(s => s.id === subId).text = val;
+            saveLedger();
+        }
+    });
+}
+
+function toggleMajor(id, day) {
+    const task = TASKS_V23.data.days[day].find(t => t.id === id);
+    task.done = !task.done; 
+    if (task.done) task.subtasks.forEach(s => s.done = true);
+    saveLedger();
+}
+
+function toggleSub(taskId, subId, day) {
+    const task = TASKS_V23.data.days[day].find(t => t.id === taskId);
+    const sub = task.subtasks.find(s => s.id === subId);
+    sub.done = !sub.done; 
+    task.done = task.subtasks.length > 0 && task.subtasks.every(s => s.done);
+    saveLedger();
+}
+
+function setFilter(f) {
+    TASKS_V23.filter = f;
+    ['all', 'pending', 'completed'].forEach(id => {
+        const btn = document.getElementById(`f-${id}`);
+        btn.classList.remove('bg-indigo-600');
+    });
+    document.getElementById(`f-${f}`).classList.add('bg-indigo-600');
+    renderLedger();
+}
+
+function saveLedger() { 
+    localStorage.setItem('pro_ledger_v23', JSON.stringify(TASKS_V23.data)); 
+    renderLedger(); 
+}
+
+function toggleLedger() {
+    const p = document.getElementById('ledgerPanel');
+    const f = document.getElementById('taskFab');
+    TASKS_V23.isOpen = !TASKS_V23.isOpen;
+    p.style.left = TASKS_V23.isOpen ? '20px' : '-500px';
+    f.style.opacity = TASKS_V23.isOpen ? '0' : '1';
+}
+
+function deleteTask(id, day) {
+    TASKS_V23.data.days[day] = TASKS_V23.data.days[day].filter(t => t.id !== id);
+    saveLedger();
+}
+
+function makeDraggableV23(el) {
+    let isDragging = false;
+    el.onmousedown = (e) => {
+        isDragging = true;
+        document.onmousemove = (e) => { if (isDragging) { let y = e.clientY - 50; el.style.top = y + 'px'; TASKS_V23.pos.y = y; } };
+        document.onmouseup = () => { isDragging = false; localStorage.setItem('task_pos_v23', JSON.stringify(TASKS_V23.pos)); document.onmousemove = null; };
+    };
+}
+
+function syncV23() {
+    const observer = new MutationObserver(() => {
+        const isFocus = document.body.classList.contains('focus-mode');
+        const fab = document.getElementById('taskFab');
+        if (fab) fab.style.display = isFocus ? 'none' : 'flex';
+        document.querySelectorAll('.fa-tasks, .fa-clipboard-list').forEach(icon => {
+            const btn = icon.closest('button') || icon.parentElement;
+            btn.onclick = (e) => { e.preventDefault(); toggleLedger(); };
+        });
+    });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+}
+
+document.addEventListener('DOMContentLoaded', initProTasksV23);
+</script>
+<script>
+// ============================================
+// الكود النهائي البسيط - يمنع الفتح التلقائي فقط
+// ============================================
+
+// 1. إغلاق الإعدادات فوراً عند تحميل الصفحة
+window.addEventListener('load', function() {
+    console.log("🔧 أقفل الإعدادات عند بداية التشغيل");
+    
+    // تأكد أن الإعدادات مغلقة
+    const panel = document.getElementById('settingsPanel');
+    if (panel) {
+        panel.classList.add('translate-x-full');
+    }
+});
+
+// 2. استبدل دالة toggleSettings الأصلية
+const originalToggleSettings = window.toggleSettings;
+
+// 3. دالة toggleSettings الجديدة
+window.toggleSettings = function() {
+    console.log("🔄 محاولة فتح الإعدادات...");
+    
+    // استدعاء الدالة الأصلية
+    if (originalToggleSettings) {
+        return originalToggleSettings();
+    }
+};
+
+// 4. مراقبة فتح الإعدادات وإغلاقها إذا فتحت تلقائياً
+let pageLoadedTime = Date.now();
+let userManuallyOpened = false;
+
+// تحقق كل نصف ثانية إذا فتحت الإعدادات تلقائياً
+setInterval(function() {
+    const now = Date.now();
+    const secondsSinceLoad = (now - pageLoadedTime) / 1000;
+    
+    // فقط خلال أول 10 ثواني من تشغيل الصفحة
+    if (secondsSinceLoad < 10) {
+        const panel = document.getElementById('settingsPanel');
+        
+        // إذا الإعدادات فتحت تلقائياً (بدون أن المستخدم فتحها)
+        if (panel && !panel.classList.contains('translate-x-full') && !userManuallyOpened) {
+            console.log("🚫 أقفل الإعدادات (فتحت تلقائياً)");
+            panel.classList.add('translate-x-full');
+        }
+    }
+}, 500);
+
+// 5. كشف عندما يفتح المستخدم الإعدادات يدوياً
+document.addEventListener('click', function(event) {
+    // إذا ضغط على زر الإعدادات
+    if (event.target.closest('#settingsBtn') || 
+        event.target.closest('[onclick*="toggleSettings"]')) {
+        
+        console.log("👆 المستخدم فتح الإعدادات يدوياً");
+        userManuallyOpened = true;
+    }
+});
+
+console.log("✅ النظام جاهز - الإعدادات تفتح يدوياً فقط");
+</script>
+<div id="pro-cursor-holder">
+    <div id="cursor-main-dot"></div>
+    <div id="cursor-outer-ring"></div>
+</div>
+
+<style>
+    /* 1. القواعد الأساسية */
+    @media (pointer: fine) {
+        body.cursor-enabled, body.cursor-enabled * { cursor: none !important; }
+    }
+
+    #cursor-main-dot, #cursor-outer-ring {
+        position: fixed; pointer-events: none; z-index: 99999999; display: none;
+        transform: translate(-50%, -50%); transition: width 0.2s, height 0.2s, background 0.3s, border 0.3s, opacity 0.3s;
+    }
+
+    /* --- مكتبة الأشكال الـ 15 مع ميكس التفاعل --- */
+    .st-sandglass #cursor-main-dot { display: block; width: 12px; height: 12px; background: #fbbf24; clip-path: polygon(0% 0%, 100% 0%, 50% 50%, 100% 100%, 0% 100%, 50% 50%); animation: cursor-flip 2s infinite; }
+    .st-sandglass #cursor-outer-ring { display: block; width: 32px; height: 32px; border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 50%; }
+
+    .st-chrono #cursor-main-dot { display: block; width: 6px; height: 6px; background: #6366f1; border-radius: 50%; }
+    .st-chrono #cursor-outer-ring { display: block; width: 30px; height: 30px; border: 2px solid #6366f1; border-radius: 50%; border-top-color: transparent; animation: cursor-spin 1s linear infinite; }
+
+    .st-vortex #cursor-outer-ring { display: block; width: 35px; height: 35px; border: 3px double #a855f7; border-radius: 40% 60% 70% 30% / 40% 50% 60% 70%; animation: cursor-spin 2s linear infinite; }
+    .st-vortex #cursor-main-dot { display: block; width: 8px; height: 8px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px #a855f7; }
+
+    .st-ticktock #cursor-main-dot { display: block; width: 4px; height: 20px; background: #ef4444; border-radius: 2px; transform-origin: top center; animation: cursor-swing 1s ease-in-out infinite alternate; }
+    .st-ticktock #cursor-outer-ring { display: block; width: 30px; height: 30px; border: 1px dashed #ef4444; border-radius: 50%; }
+
+    .st-infinity #cursor-main-dot { display: block; width: 10px; height: 10px; border: 2px solid #ec4899; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+    .st-infinity #cursor-outer-ring { display: block; width: 35px; height: 35px; border: 2px solid #ec4899; border-radius: 50%; border-right-color: transparent; animation: cursor-spin 0.5s linear infinite; }
+
+    .st-solar #cursor-main-dot { display: block; width: 10px; height: 10px; background: #f97316; border-radius: 50%; box-shadow: 0 0 15px #f97316; }
+    .st-solar #cursor-outer-ring { display: block; width: 35px; height: 35px; border: 2px dotted #f97316; border-radius: 50%; animation: cursor-spin 5s linear infinite; }
+
+    .st-cybergear #cursor-main-dot { display: block; width: 8px; height: 8px; background: #0ea5e9; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); animation: cursor-spin 1s linear infinite; }
+    .st-cybergear #cursor-outer-ring { display: block; width: 35px; height: 35px; border: 2px dashed #0ea5e9; border-radius: 50%; animation: cursor-pulse 1s infinite; }
+
+    .st-flow #cursor-main-dot { display: block; width: 15px; height: 15px; background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); border-radius: 50%; border: 1px solid rgba(255,255,255,0.5); }
+    .st-flow #cursor-outer-ring { display: block; width: 40px; height: 40px; border: 1px solid #fff; border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; animation: cursor-spin 3s ease-in-out infinite alternate; }
+
+    .st-deadline #cursor-main-dot { display: block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; }
+    .st-deadline #cursor-outer-ring { display: block; width: 20px; height: 20px; background: rgba(239, 68, 68, 0.2); border-radius: 50%; animation: cursor-pulse 0.6s infinite; }
+
+    .st-digital #cursor-main-dot { display: block; width: 14px; height: 14px; border: 1px solid #22c55e; background: rgba(34, 197, 94, 0.1); }
+    .st-digital #cursor-outer-ring { display: block; width: 30px; height: 30px; border: 1px solid #22c55e; opacity: 0.5; }
+
+    .st-atomic #cursor-main-dot { display: block; width: 4px; height: 4px; background: #fff; border-radius: 50%; }
+    .st-atomic #cursor-outer-ring { display: block; width: 40px; height: 15px; border: 1px solid #6366f1; border-radius: 50%; animation: cursor-spin 0.5s linear infinite; }
+
+    .st-orbit #cursor-main-dot { display: block; width: 6px; height: 6px; background: #8b5cf6; border-radius: 50%; }
+    .st-orbit #cursor-outer-ring { display: block; width: 30px; height: 30px; border: 1px solid #8b5cf6; border-radius: 50%; border-right: 5px solid #8b5cf6; animation: cursor-spin 0.3s linear infinite; }
+
+    .st-ghost #cursor-outer-ring { display: block; width: 35px; height: 35px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.3); border-radius: 10px; backdrop-filter: blur(2px); animation: cursor-spin 10s linear infinite; }
+
+    .st-target #cursor-main-dot { display: block; width: 2px; height: 20px; background: #fff; }
+    .st-target #cursor-main-dot::after { content:''; position:absolute; width:20px; height:2px; background:#fff; top:50%; left:50%; transform:translate(-50%,-50%); }
+    .st-target #cursor-outer-ring { display: block; width: 30px; height: 30px; border: 1px solid #fff; border-radius: 50%; }
+
+    .st-minimal #cursor-main-dot { display: block; width: 8px; height: 8px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px rgba(255,255,255,0.8); }
+
+    /* --- تفاعلات الأنيميشن --- */
+    @keyframes cursor-spin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+    @keyframes cursor-pulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; } }
+    @keyframes cursor-flip { 0%, 10% { transform: translate(-50%, -50%) rotate(0deg); } 90%, 100% { transform: translate(-50%, -50%) rotate(180deg); } }
+    @keyframes cursor-swing { from { transform: translate(-50%, -50%) rotate(-45deg); } to { transform: translate(-50%, -50%) rotate(45deg); } }
+
+    /* تفاعلات Hover و Click */
+    .hvr-active #cursor-outer-ring { transform: translate(-50%, -50%) scale(1.4); border-color: #fff !important; background: rgba(255,255,255,0.1); border-style: solid; }
+    body.cursor-clicked #cursor-main-dot { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+
+    /* --- تنسيق الواجهة كجزء من الإعدادات --- */
+    .cursor-settings-section {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .cursor-grid-final {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 16px;
+    }
+    .cursor-option-card {
+        background: rgba(15, 23, 42, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+    }
+    .cursor-option-card:hover {
+        background: rgba(99, 102, 241, 0.05);
+        border-color: rgba(99, 102, 241, 0.4);
+        transform: translateY(-2px);
+    }
+    .cursor-option-card.active {
+        background: rgba(99, 102, 241, 0.15);
+        border-color: #6366f1;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+    }
+    .preview-box-final {
+        width: 42px;
+        height: 42px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    .cursor-label-final {
+        font-size: 10px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .cursor-option-card.active .cursor-label-final {
+        color: white;
+    }
+</style>
+
+<script>
+    const mDot = document.getElementById('cursor-main-dot');
+    const oRing = document.getElementById('cursor-outer-ring');
+
+    // تتبع الماوس
+    window.addEventListener('mousemove', (e) => {
+        const x = e.clientX, y = e.clientY;
+        requestAnimationFrame(() => {
+            mDot.style.left = x + 'px'; mDot.style.top = y + 'px';
+            oRing.style.left = x + 'px'; oRing.style.top = y + 'px';
+        });
+    });
+
+    // تأثير الكليك
+    window.addEventListener('mousedown', () => document.body.classList.add('cursor-clicked'));
+    window.addEventListener('mouseup', () => setTimeout(() => document.body.classList.remove('cursor-clicked'), 150));
+
+    // تبديل الماوس وحفظه
+    function updateCursor(id) {
+        document.body.classList.remove('cursor-enabled');
+        const styles = ['sandglass', 'chrono', 'vortex', 'ticktock', 'infinity', 'solar', 'cybergear', 'flow', 'deadline', 'digital', 'atomic', 'orbit', 'ghost', 'target', 'minimal'];
+        styles.forEach(s => document.body.classList.remove('st-' + s));
+
+        if (id !== 'default') {
+            document.body.classList.add('cursor-enabled', 'st-' + id);
+            mDot.style.display = 'block'; oRing.style.display = 'block';
+        } else {
+            mDot.style.display = 'none'; oRing.style.display = 'none';
+        }
+        localStorage.setItem('pt_cursor_v8', id);
+        injectToSettings(); // إعادة رسم الواجهة لتحديث الـ Active
+    }
+
+    // الحقن الذكي أسفل الإعدادات
+    function injectToSettings() {
+        const current = localStorage.getItem('pt_cursor_v8') || 'sandglass';
+        
+        // البحث عن آخر عنصر في حاوية الإعدادات
+        const settingsContainer = document.querySelector('#settingsPanel .space-y-6') || 
+                                  document.querySelector('.settings-content') ||
+                                  document.querySelector('#appearance-settings');
+
+        if (!settingsContainer) return;
+
+        let uiWrapper = document.getElementById('cursor-manager-v8');
+        if (!uiWrapper) {
+            uiWrapper = document.createElement('div');
+            uiWrapper.id = 'cursor-manager-v8';
+            uiWrapper.className = 'cursor-settings-section';
+            settingsContainer.appendChild(uiWrapper);
+        }
+
+        const options = [
+            { id: 'default', name: 'System', icon: '🖱️' },
+            { id: 'sandglass', name: 'Sand Glass', icon: '⏳' },
+            { id: 'chrono', name: 'Chrono', icon: '⏱️' },
+            { id: 'vortex', name: 'Vortex', icon: '🌀' },
+            { id: 'ticktock', name: 'Pendulum', icon: '🔔' },
+            { id: 'infinity', name: 'Infinity', icon: '♾️' },
+            { id: 'solar', name: 'Solar', icon: '☀️' },
+            { id: 'cybergear', name: 'Cyber', icon: '🤖' },
+            { id: 'flow', name: 'Flow', icon: '🌊' },
+            { id: 'deadline', name: 'Alert', icon: '🚨' },
+            { id: 'digital', name: 'Digital', icon: '📟' },
+            { id: 'atomic', name: 'Atomic', icon: '⚛️' },
+            { id: 'orbit', name: 'Orbit', icon: '🛰️' },
+            { id: 'ghost', name: 'Glass', icon: '👻' },
+            { id: 'target', name: 'Sniper', icon: '🎯' }
+        ];
+
+        uiWrapper.innerHTML = `
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-wand-magic-sparkles text-indigo-400"></i>
+                    <h3 class="text-xs font-black text-gray-200 uppercase tracking-widest">Cursor Theme</h3>
+                </div>
+                <span class="text-[9px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full font-bold">15 STYLES</span>
+            </div>
+            <div class="cursor-grid-final">
+                ${options.map(opt => `
+                    <div class="cursor-option-card ${current === opt.id ? 'active' : ''}" onclick="updateCursor('${opt.id}')">
+                        <div class="preview-box-final">
+                             ${opt.id === 'default' ? `<span>${opt.icon}</span>` : `<div class="st-${opt.id} scale-50"><div id="cursor-main-dot" style="display:block; position:relative; left:auto; top:auto; transform:none;"></div><div id="cursor-outer-ring" style="display:block; position:relative; left:auto; top:auto; transform:none; margin-top:-10px;"></div></div>`}
+                        </div>
+                        <span class="cursor-label-final">${opt.name}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    // تفاعلات الـ Hover
+    document.addEventListener('mouseover', (e) => {
+        if (e.target.closest('button, a, .control-btn, .cursor-option-card, input, [onclick]')) {
+            document.body.classList.add('hvr-active');
+        }
+    });
+    document.addEventListener('mouseout', (e) => {
+        if (e.target.closest('button, a, .control-btn, .cursor-option-card, input, [onclick]')) {
+            document.body.classList.remove('hvr-active');
+        }
+    });
+
+    // تهيئة التشغيل
+    window.addEventListener('DOMContentLoaded', () => {
+        const saved = localStorage.getItem('pt_cursor_v8');
+        if (!saved) {
+            updateCursor('sandglass'); // أول مرة
+        } else {
+            updateCursor(saved);
+        }
+        // محاولة الحقن فوراً وبعد ثانية لضمان ظهور الإعدادات
+        setTimeout(injectToSettings, 500);
+        setTimeout(injectToSettings, 1500);
+    });
+
+    // مراقبة الضغط لفتح القوائم
+    document.addEventListener('click', () => setTimeout(injectToSettings, 100));
 </script>
 </body>
 </html> 
