@@ -12089,5 +12089,93 @@ console.log("✅ النظام جاهز - الإعدادات تفتح يدويا�
 
 })();
 </script>
+<script>
+// ==========================================
+// كود تشغيل صوت فيديو اليوتيوب والتحكم به (للتطبيقات والويب)
+// ==========================================
+(function() {
+    // 1. تعريف حالة الصوت (افتراضياً غير مكتوم)
+    if (localStorage.getItem('bgVideoMuted') === null) {
+        localStorage.setItem('bgVideoMuted', 'false');
+    }
+
+    // 2. حقن زر التحكم في قائمة الإعدادات (تبويب الصوت)
+    setInterval(() => {
+        const audioTab = document.querySelector('[data-tab-content="audio"]');
+        if (audioTab && !document.getElementById('videoSoundSettingRow')) {
+            const isMuted = localStorage.getItem('bgVideoMuted') === 'true';
+            const settingHTML = `
+                <div id="videoSoundSettingRow" class="flex items-center justify-between p-3 bg-white/5 rounded-lg mb-2">
+                    <div class="flex flex-col">
+                        <span class="font-medium">صوت فيديو الخلفية</span>
+                        <span class="text-xs opacity-50">تشغيل الصوت للفيديو الحالي</span>
+                    </div>
+                    <div id="videoSoundToggle" class="toggle-switch ${!isMuted ? 'active' : ''}" 
+                         onclick="toggleVideoSoundAction(this)">
+                        <div class="toggle-switch-handle"></div>
+                    </div>
+                </div>`;
+            audioTab.insertAdjacentHTML('beforeend', settingHTML);
+        }
+    }, 1000);
+
+    // 3. دالة تبديل الصوت وتحديث الفيديو فوراً
+    window.toggleVideoSoundAction = function(el) {
+        el.classList.toggle('active');
+        const shouldMute = !el.classList.contains('active');
+        localStorage.setItem('bgVideoMuted', shouldMute);
+        
+        const ytIframe = document.getElementById('proYoutubeBackground');
+        if (ytIframe && ytIframe.src) {
+            let url = new URL(ytIframe.src);
+            url.searchParams.set('mute', shouldMute ? '1' : '0');
+            // إعادة تعيين المصدر لتحديث حالة الصوت فوراً
+            ytIframe.src = url.toString();
+        }
+    };
+
+    // 4. تعديل دالة التحميل لضمان عمل الصوت في التطبيقات (Desktop)
+    const originalSetVideoSource = window.setVideoSource;
+    window.setVideoSource = function(url) {
+        if (!url) return;
+        
+        const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
+        const isMuted = localStorage.getItem('bgVideoMuted') === 'true';
+
+        if (ytIdMatch) {
+            const videoId = ytIdMatch[1];
+            const ytIframe = document.getElementById('proYoutubeBackground');
+            const vTag = document.getElementById('proVideoBackground');
+            const container = document.getElementById('bgVideoContainer');
+
+            vTag.style.display = 'none';
+            ytIframe.style.display = 'block';
+            
+            // الرابط المطور ليعمل داخل التطبيقات dmg/msi مع تفعيل الصوت
+            const desktopUrl = `https://www.youtube-nocookie.com/embed/${videoId}?` + 
+                `autoplay=1&mute=${isMuted ? 1 : 0}&loop=1&playlist=${videoId}` +
+                `&controls=0&showinfo=0&rel=0&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+            
+            ytIframe.src = desktopUrl;
+            container.style.display = 'block';
+        } else if (originalSetVideoSource) {
+            originalSetVideoSource(url);
+        }
+    };
+
+    // 5. حل مشكلة حظر الصوت التلقائي (Autoplay Policy)
+    // المتصفحات تمنع الصوت حتى يلمس المستخدم الشاشة
+    document.addEventListener('click', function() {
+        const ytIframe = document.getElementById('proYoutubeBackground');
+        const isMuted = localStorage.getItem('bgVideoMuted') === 'true';
+        if (ytIframe && !isMuted) {
+            // إرسال أمر تشغيل الصوت عبر API اليوتيوب
+            ytIframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+            ytIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        }
+    }, { once: true });
+
+})();
+</script>
 </body>
 </html> 
