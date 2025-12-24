@@ -11754,691 +11754,319 @@ console.log("✅ النظام جاهز - الإعدادات تفتح يدويا�
 </script>
 <script>
 // ============================================
-// INDEPENDENT BACKGROUND VIDEO PLAYER
+// UNIVERSAL VIDEO PLAYER FOR ALL PLATFORMS
 // ============================================
 
-class BackgroundVideoPlayer {
+class UniversalVideoPlayer {
     constructor() {
-        this.videoElement = null;
-        this.isPlaying = false;
-        this.videoURL = null;
-        this.initialize();
+        this.video = null;
+        this.currentSource = null;
+        this.init();
     }
 
-    initialize() {
-        console.log('🎬 Initializing independent background video player');
-        
-        // إنشاء عنصر فيديو منفصل تماماً
-        this.createVideoElement();
-        
-        // تحميل الفيديو المحفوظ
-        this.loadSavedVideo();
-        
-        // إعدادات التشغيل المستقل
-        this.setupIndependentPlayback();
-        
-        // ربط مع واجهة الإعدادات
-        this.setupSettingsIntegration();
-    }
-
-    createVideoElement() {
-        // إنشاء فيديو خارج التايمر تماماً
-        this.videoElement = document.createElement('video');
-        this.videoElement.id = 'independentBackgroundVideo';
-        this.videoElement.style.cssText = `
+    init() {
+        // 1. إنشاء عنصر فيديو عالمي
+        this.video = document.createElement('video');
+        this.video.id = 'universalBgVideo';
+        this.video.style.cssText = `
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
             object-fit: cover;
-            z-index: -1;
-            opacity: ${window.APP_STATE?.settings?.mediaOpacity || 30}%;
+            z-index: -9999;
             pointer-events: none;
-            transition: opacity 0.5s ease;
+            opacity: 0.3;
         `;
+        this.video.muted = true;
+        this.video.loop = true;
+        this.video.playsInline = true;
         
-        this.videoElement.setAttribute('muted', '');
-        this.videoElement.setAttribute('playsinline', '');
-        this.videoElement.setAttribute('webkit-playsinline', '');
-        this.videoElement.setAttribute('loop', '');
-        
-        document.body.appendChild(this.videoElement);
-        
-        // منع أي تفاعل مع الفيديو
-        this.videoElement.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-        });
-        
-        this.videoElement.addEventListener('keydown', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-        });
+        document.body.appendChild(this.video);
+
+        // 2. تحميل الفيديو المخزن
+        this.loadStoredVideo();
+
+        // 3. بدء التشغيل
+        this.startPlayback();
+
+        console.log('🎬 Universal Video Player Ready for ALL platforms');
     }
 
-    loadSavedVideo() {
+    async loadStoredVideo() {
         try {
-            const savedData = localStorage.getItem('proTimer_videoData');
-            if (!savedData) return;
+            const saved = localStorage.getItem('universal_video');
+            if (!saved) return;
 
-            const data = JSON.parse(savedData);
+            const data = JSON.parse(saved);
             
-            if (data.url && this.isValidVideoURL(data.url)) {
-                this.loadVideo(data.url);
-            } else if (data.blobData) {
-                this.loadBlobVideo(data.blobData);
+            if (data.base64) {
+                // Base64 يعمل في كل البيئات
+                await this.loadBase64Video(data.base64, data.type);
+            } else if (data.blobUrl) {
+                // Blob URL يعمل في التطبيقات المكتبية
+                this.loadBlobVideo(data.blobUrl);
             }
-        } catch (error) {
-            console.error('Error loading saved video:', error);
+        } catch (e) {
+            console.log('No stored video found');
         }
     }
 
-    isValidVideoURL(url) {
-        const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'];
-        const extension = url.substring(url.lastIndexOf('.')).toLowerCase();
-        return videoExtensions.includes(extension) || url.includes('youtube.com') || url.includes('youtu.be');
-    }
-
-    async loadVideo(url) {
+    // الطريقة الأكثر أماناً لجميع المنصات
+    async loadBase64Video(base64Data, mimeType) {
         try {
-            this.videoURL = url;
-            this.videoElement.src = url;
+            // تحويل Base64 إلى Blob
+            const byteCharacters = atob(base64Data.split(',')[1]);
+            const byteNumbers = new Array(byteCharacters.length);
             
-            // جلب البيانات الأولية
-            await this.videoElement.load();
-            
-            // التشغيل التلقائي (بشكل مستقل)
-            setTimeout(() => {
-                this.playIndependent();
-            }, 1000);
-            
-            console.log('✅ Video loaded:', url);
-            
-        } catch (error) {
-            console.error('Error loading video:', error);
-        }
-    }
-
-    async loadBlobVideo(blobData) {
-        try {
-            let blob;
-            
-            if (blobData.startsWith('data:video/')) {
-                const response = await fetch(blobData);
-                blob = await response.blob();
-            } else {
-                const response = await fetch(blobData);
-                blob = await response.blob();
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
             }
             
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: mimeType });
             const url = URL.createObjectURL(blob);
-            this.loadVideo(url);
+            
+            this.video.src = url;
+            this.currentSource = url;
             
         } catch (error) {
-            console.error('Error loading blob video:', error);
+            console.error('Base64 video error:', error);
         }
     }
 
-    // تشغيل مستقل تماماً عن التايمر
-    playIndependent() {
-        if (!this.videoElement) return;
-        
-        const playPromise = this.videoElement.play();
-        
-        if (playPromise !== undefined) {
-            playPromise
-                .then(() => {
-                    this.isPlaying = true;
-                    console.log('🎬 Video playing independently');
-                })
-                .catch(error => {
-                    console.log('Auto-play prevented, will play on user interaction');
-                    this.setupInteractionPlayback();
-                });
-        }
+    loadBlobVideo(blobUrl) {
+        this.video.src = blobUrl;
+        this.currentSource = blobUrl;
     }
 
-    setupInteractionPlayback() {
-        // تشغيل عند أي تفاعل مع الصفحة (لكن ليس مع التايمر)
-        const handleInteraction = () => {
-            if (this.videoElement && this.videoElement.paused) {
-                this.videoElement.play()
-                    .then(() => {
-                        this.isPlaying = true;
-                        console.log('Video started on interaction');
-                    })
-                    .catch(() => {
-                        // تجاهل الأخطاء
-                    });
-            }
-            
-            // إزالة المستمع بعد التشغيل الأول
-            document.removeEventListener('click', handleInteraction);
-            document.removeEventListener('keydown', handleInteraction);
-        };
-        
-        // استماع فقط للأحداث العامة (ليس على التايمر)
-        document.addEventListener('click', handleInteraction, { once: true });
-        document.addEventListener('keydown', handleInteraction, { once: true });
-    }
-
-    setupIndependentPlayback() {
-        // إعادة التشغيل عندما تعود الصفحة للواجهة
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && this.videoElement) {
-                setTimeout(() => {
-                    this.videoElement.play().catch(() => {});
-                }, 300);
-            }
-        });
-        
-        // تجاهل جميع أحداث لوحة المفاتيح للفيديو
-        document.addEventListener('keydown', (e) => {
-            const video = this.videoElement;
-            if (!video) return;
-            
-            // منع أي تحكم بالفيديو عبر لوحة المفاتيح
-            switch(e.key) {
-                case ' ':
-                case 'm':
-                case 'f':
-                case 'MediaPlayPause':
-                    // لا تفعل شيئاً - دع التايمر يتعامل مع هذه المفاتيح
-                    break;
-            }
-        });
-    }
-
-    setupSettingsIntegration() {
-        // تحديث العتامة عند تغيير الإعدادات
-        if (window.APP_STATE) {
-            const originalApplySettings = window.applySettings;
-            
-            window.applySettings = function() {
-                if (originalApplySettings) {
-                    originalApplySettings();
-                }
+    startPlayback() {
+        setTimeout(() => {
+            this.video.play().catch(e => {
+                console.log('Auto-play blocked, waiting for interaction...');
                 
-                const opacity = window.APP_STATE?.settings?.mediaOpacity || 30;
-                const video = document.getElementById('independentBackgroundVideo');
-                if (video) {
-                    video.style.opacity = `${opacity}%`;
-                }
-            };
-        }
-    }
-
-    // تغيير الفيديو
-    changeVideo(url) {
-        if (this.videoElement) {
-            this.videoElement.src = url;
-            this.videoURL = url;
-            this.videoElement.load();
-            this.playIndependent();
-        }
-    }
-
-    // إيقاف الفيديو
-    stop() {
-        if (this.videoElement) {
-            this.videoElement.pause();
-            this.isPlaying = false;
-        }
-    }
-
-    // بدء الفيديو
-    start() {
-        if (this.videoElement) {
-            this.playIndependent();
-        }
-    }
-
-    // تنظيف
-    cleanup() {
-        if (this.videoElement) {
-            this.videoElement.pause();
-            this.videoElement.src = '';
-            this.videoElement.remove();
-        }
-        
-        if (this.videoURL && this.videoURL.startsWith('blob:')) {
-            URL.revokeObjectURL(this.videoURL);
-        }
-    }
-}
-
-// ============================================
-// VIDEO UPLOAD HANDLER (منفصل عن التايمر)
-// ============================================
-
-class VideoUploadHandler {
-    constructor() {
-        this.videoPlayer = null;
-        this.initialize();
-    }
-
-    initialize() {
-        console.log('📤 Initializing video upload handler');
-        this.setupUploadListeners();
-    }
-
-    setupUploadListeners() {
-        // رابط URL
-        const urlInput = document.getElementById('mediaUrl');
-        if (urlInput) {
-            urlInput.addEventListener('change', (e) => this.handleURLInput(e));
-        }
-        
-        // رفع ملف
-        const fileInput = document.getElementById('mediaFile');
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
-        }
-        
-        // اختبار الفيديو
-        const testBtn = document.querySelector('[onclick*="testMedia"]');
-        if (testBtn) {
-            testBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.testVideo();
+                // تشغيل عند أي تفاعل
+                const startOnInteraction = () => {
+                    this.video.play();
+                    document.removeEventListener('click', startOnInteraction);
+                };
+                
+                document.addEventListener('click', startOnInteraction, { once: true });
             });
-        }
-        
-        // إزالة الفيديو
-        const removeBtn = document.querySelector('[onclick*="removeMedia"]');
-        if (removeBtn) {
-            removeBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.removeVideo();
-            });
-        }
+        }, 1000);
     }
 
-    handleURLInput(e) {
-        const url = e.target.value.trim();
-        if (!url) return;
-        
-        if (this.isValidVideoURL(url)) {
-            this.saveAndPlayVideo(url, 'url');
-            this.showMessage('Video URL loaded successfully', 'success');
-        } else {
-            this.showMessage('Please enter a valid video URL', 'error');
-        }
-    }
-
-    async handleFileUpload(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        if (!file.type.startsWith('video/')) {
-            this.showMessage('Please select a video file', 'error');
-            return;
-        }
-        
+    // رفع فيديو جديد
+    async uploadVideo(file) {
         try {
-            const reader = new FileReader();
+            // الطريقة 1: حفظ كـ Base64 (للويب والتطبيقات)
+            const base64 = await this.fileToBase64(file);
             
-            reader.onload = (event) => {
-                const blobURL = URL.createObjectURL(file);
-                this.saveAndPlayVideo(blobURL, 'blob', file.name, file.type);
-                this.showMessage(`${file.name} loaded successfully`, 'success');
-            };
+            // الطريقة 2: حفظ كـ Blob URL (للتطبيقات المكتبية)
+            const blobUrl = URL.createObjectURL(file);
             
-            reader.readAsArrayBuffer(file);
+            // حفظ البيانات
+            localStorage.setItem('universal_video', JSON.stringify({
+                base64: base64,
+                blobUrl: blobUrl,
+                type: file.type,
+                name: file.name,
+                size: file.size,
+                timestamp: Date.now()
+            }));
+            
+            // تحميل الفيديو
+            await this.loadBase64Video(base64, file.type);
+            
+            return true;
             
         } catch (error) {
-            console.error('Error uploading file:', error);
-            this.showMessage('Failed to load video file', 'error');
+            console.error('Upload error:', error);
+            return false;
         }
     }
 
-    isValidVideoURL(url) {
-        const videoPatterns = [
-            /\.mp4(\?|$)/i,
-            /\.webm(\?|$)/i,
-            /\.ogg(\?|$)/i,
-            /\.mov(\?|$)/i,
-            /\.avi(\?|$)/i,
-            /youtube\.com\/watch\?v=/i,
-            /youtu\.be\//i,
-            /\.m3u8(\?|$)/i
-        ];
-        
-        return videoPatterns.some(pattern => pattern.test(url));
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+        });
     }
 
-    saveAndPlayVideo(source, type, filename = '', mimeType = '') {
-        // حفظ البيانات
-        const videoData = {
-            source,
-            type,
-            filename,
-            mimeType,
-            timestamp: Date.now()
-        };
-        
-        localStorage.setItem('background_video_data', JSON.stringify(videoData));
-        
-        // تشغيل الفيديو
-        if (window.backgroundVideoPlayer) {
-            window.backgroundVideoPlayer.changeVideo(source);
+    cleanup() {
+        if (this.currentSource && this.currentSource.startsWith('blob:')) {
+            URL.revokeObjectURL(this.currentSource);
         }
-        
-        // تحديث المعاينة
-        this.updatePreview(source);
-        
-        // تحديث الإعدادات
-        if (window.APP_STATE) {
-            window.APP_STATE.settings.mediaUrl = source;
-            window.APP_STATE.settings.mediaType = 'video';
-            window.APP_STATE.settings.mediaEnabled = true;
-            
-            if (window.saveAllSettings) {
-                window.saveAllSettings();
-            }
-        }
-    }
-
-    updatePreview(source) {
-        const preview = document.getElementById('mediaPreview');
-        if (!preview) return;
-        
-        preview.innerHTML = `
-            <video controls muted style="width:100%; height:100%; border-radius:8px;">
-                <source src="${source}" type="video/mp4">
-            </video>
-            <div class="mt-2 text-xs text-center opacity-70">
-                Video loaded - Plays independently in background
-            </div>
-        `;
-    }
-
-    testVideo() {
-        const testVideos = [
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4'
-        ];
-        
-        const randomVideo = testVideos[Math.floor(Math.random() * testVideos.length)];
-        this.saveAndPlayVideo(randomVideo, 'url', 'Test Video', 'video/mp4');
-        this.showMessage('Test video loaded', 'success');
-    }
-
-    removeVideo() {
-        if (confirm('Are you sure you want to remove the background video?')) {
-            localStorage.removeItem('background_video_data');
-            
-            if (window.backgroundVideoPlayer) {
-                window.backgroundVideoPlayer.stop();
-                window.backgroundVideoPlayer.cleanup();
-            }
-            
-            // إخفاء الفيديو
-            const videoElement = document.getElementById('independentBackgroundVideo');
-            if (videoElement) {
-                videoElement.style.opacity = '0';
-                setTimeout(() => {
-                    videoElement.remove();
-                }, 500);
-            }
-            
-            // إعادة تعيين الإعدادات
-            if (window.APP_STATE) {
-                window.APP_STATE.settings.mediaUrl = '';
-                window.APP_STATE.settings.mediaEnabled = false;
-                
-                if (window.saveAllSettings) {
-                    window.saveAllSettings();
-                }
-            }
-            
-            // إعادة تعيين المعاينة
-            const preview = document.getElementById('mediaPreview');
-            if (preview) {
-                preview.innerHTML = `
-                    <div class="text-center p-4">
-                        <i class="fas fa-video-slash text-3xl opacity-30 mb-2"></i>
-                        <p class="opacity-50">No background video</p>
-                    </div>
-                `;
-            }
-            
-            this.showMessage('Video removed', 'info');
-        }
-    }
-
-    showMessage(message, type = 'info') {
-        if (window.showToast) {
-            window.showToast(message, type);
-        } else {
-            alert(`${type.toUpperCase()}: ${message}`);
-        }
+        this.video?.remove();
     }
 }
 
 // ============================================
-// KEYBOARD SHORTCUTS FIX
+// SIMPLE UPLOAD INTERFACE
 // ============================================
 
-// منع الفيديو من الاستجابة لاختصارات التايمر
-function fixKeyboardShortcuts() {
-    const originalKeyHandler = window.handleKeyboardShortcuts;
+function setupVideoUpload() {
+    // إضافة زر رفع بسيط
+    const uploadHTML = `
+        <div class="card mt-4">
+            <h3 class="text-lg font-semibold mb-3">🎥 Background Video</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block mb-2 text-sm">Upload Video File</label>
+                    <input type="file" id="simpleVideoUpload" accept="video/*" class="w-full">
+                </div>
+                <div class="text-xs opacity-60">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Supports: MP4, WebM, MOV, AVI
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="testVideo()" class="btn-secondary flex-1">
+                        <i class="fas fa-play mr-2"></i> Test
+                    </button>
+                    <button onclick="removeVideo()" class="btn-secondary flex-1 text-red-300">
+                        <i class="fas fa-trash mr-2"></i> Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
     
-    window.handleKeyboardShortcuts = function(e) {
-        // تمرير جميع المفاتيح للتايمر (الفيديو لا يتأثر)
-        if (originalKeyHandler) {
-            return originalKeyHandler(e);
-        }
-    };
-    
-    // منع التحكم بالفيديو تماماً
-    document.addEventListener('keydown', (e) => {
-        // إذا كان المستخدم في حقل إدخال، دع المتصفح يتعامل معه
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-            return;
-        }
+    // إضافة إلى إعدادات الوسائط
+    const mediaTab = document.querySelector('[data-tab-content="media"]');
+    if (mediaTab) {
+        mediaTab.innerHTML += uploadHTML;
         
-        // تجاهل هذه المفاتيح تماماً للفيديو
-        const videoKeys = [' ', 'm', 'f', 'k', 'MediaPlayPause'];
-        if (videoKeys.includes(e.key)) {
-            // لا تفعل شيئاً للفيديو - دع التايمر يتعامل معها
-            return;
-        }
-    }, true); // استخدام capture phase لمنع الانتشار
+        // رفع الفيديو
+        document.getElementById('simpleVideoUpload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('video/')) {
+                alert('Please select a video file');
+                return;
+            }
+            
+            if (window.universalVideoPlayer) {
+                const success = await window.universalVideoPlayer.uploadVideo(file);
+                if (success) {
+                    showMessage('✅ Video uploaded successfully', 'success');
+                } else {
+                    showMessage('❌ Upload failed', 'error');
+                }
+            }
+        });
+    }
 }
 
 // ============================================
 // INITIALIZATION
 // ============================================
 
-// تهيئة كل شيء عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Initializing independent background video system');
+let universalVideoPlayer;
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. تهيئة مشغل الفيديو
+    universalVideoPlayer = new UniversalVideoPlayer();
+    window.universalVideoPlayer = universalVideoPlayer;
     
-    // تهيئة مشغل الفيديو
-    window.backgroundVideoPlayer = new BackgroundVideoPlayer();
+    // 2. إعداد واجهة الرفع
+    setTimeout(setupVideoUpload, 1000);
     
-    // تهيئة معالج الرفع
-    window.videoUploadHandler = new VideoUploadHandler();
+    // 3. منع التفاعل مع الفيديو
+    preventVideoInteraction();
     
-    // إصلاح اختصارات لوحة المفاتيح
-    fixKeyboardShortcuts();
-    
-    // إضافة CSS للتأكد من أن الفيديو في الخلفية
-    const style = document.createElement('style');
-    style.textContent = `
-        #independentBackgroundVideo {
-            z-index: -9999 !important;
-            pointer-events: none !important;
-            user-select: none !important;
-            -webkit-user-select: none !important;
-        }
-        
-        /* التأكد من أن التايمر فوق الفيديو */
-        #app {
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* منع أي تفاعل مع الفيديو */
-        #independentBackgroundVideo::-webkit-media-controls {
-            display: none !important;
-        }
-        
-        #independentBackgroundVideo::-webkit-media-controls-panel {
-            display: none !important;
-        }
-        
-        #independentBackgroundVideo::-webkit-media-controls-play-button {
-            display: none !important;
-        }
-        
-        #independentBackgroundVideo::-webkit-media-controls-start-playback-button {
-            display: none !important;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    console.log('✅ Independent background video system ready');
-    console.log('📌 Video plays independently, timer controls unaffected');
+    console.log('🚀 Video system ready for ALL platforms');
 });
 
-// تنظيف عند إغلاق الصفحة
-window.addEventListener('beforeunload', function() {
-    if (window.backgroundVideoPlayer) {
-        window.backgroundVideoPlayer.cleanup();
-    }
-});
-
-// ============================================
-// COMPATIBILITY FUNCTIONS
-// ============================================
-
-// وظائف توافقية مع الكود القديم
-function testMedia() {
-    if (window.videoUploadHandler) {
-        window.videoUploadHandler.testVideo();
-    }
-}
-
-function removeMedia() {
-    if (window.videoUploadHandler) {
-        window.videoUploadHandler.removeVideo();
-    }
-}
-
-function toggleMedia() {
-    const toggle = document.getElementById('mediaToggle');
-    if (toggle) {
-        toggle.classList.toggle('active');
-        
-        const isEnabled = toggle.classList.contains('active');
-        const video = document.getElementById('independentBackgroundVideo');
-        
-        if (video) {
-            video.style.opacity = isEnabled ? `${window.APP_STATE?.settings?.mediaOpacity || 30}%` : '0%';
-        }
-        
-        if (window.APP_STATE) {
-            window.APP_STATE.settings.mediaEnabled = isEnabled;
-            
-            if (window.saveAllSettings) {
-                window.saveAllSettings();
-            }
-        }
-        
-        if (window.showToast) {
-            window.showToast(isEnabled ? 'Background video enabled' : 'Background video disabled', 'info');
-        }
-    }
-}
-
-// تحديث العتامة
-function updateMediaOpacity() {
-    const slider = document.getElementById('mediaOpacity');
-    const valueSpan = document.getElementById('mediaOpacityValue');
-    
-    if (slider && valueSpan) {
-        valueSpan.textContent = slider.value;
-        
-        const video = document.getElementById('independentBackgroundVideo');
-        if (video) {
-            video.style.opacity = `${slider.value}%`;
-        }
-        
-        if (window.APP_STATE) {
-            window.APP_STATE.settings.mediaOpacity = parseInt(slider.value);
-        }
-    }
-}
-
-// ربط حدث السلايدر
-document.addEventListener('DOMContentLoaded', function() {
-    const opacitySlider = document.getElementById('mediaOpacity');
-    if (opacitySlider) {
-        opacitySlider.addEventListener('input', updateMediaOpacity);
-    }
-});
-</script>
-
-<!-- إضافة زر تحكم صغير في الزاوية -->
-<div id="videoControlMini" style="position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: none;">
-    <button onclick="toggleVideoVisibility()" style="
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: rgba(0,0,0,0.7);
-        border: 1px solid rgba(255,255,255,0.3);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 18px;
-        transition: all 0.3s;
-    ">
-        <i class="fas fa-video"></i>
-    </button>
-</div>
-
-<script>
-// تحكم مصغر للفيديو
-let videoVisible = true;
-
-function toggleVideoVisibility() {
-    const video = document.getElementById('independentBackgroundVideo');
-    const button = document.querySelector('#videoControlMini button i');
-    
+// منع أي تفاعل مع الفيديو
+function preventVideoInteraction() {
+    const video = document.getElementById('universalBgVideo');
     if (video) {
-        videoVisible = !videoVisible;
-        video.style.opacity = videoVisible ? `${window.APP_STATE?.settings?.mediaOpacity || 30}%` : '0%';
-        button.className = videoVisible ? 'fas fa-video-slash' : 'fas fa-video';
+        video.style.pointerEvents = 'none';
+        video.style.userSelect = 'none';
+        video.style.webkitUserSelect = 'none';
         
-        if (window.showToast) {
-            window.showToast(videoVisible ? 'Background video shown' : 'Background video hidden', 'info');
-        }
+        // منع التحكم
+        video.controls = false;
+        
+        // إخفاء عناصر التحكم
+        const style = document.createElement('style');
+        style.textContent = `
+            #universalBgVideo::-webkit-media-controls {
+                display: none !important;
+            }
+            #universalBgVideo {
+                -webkit-touch-callout: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+        `;
+        document.head.appendChild(style);
     }
 }
 
-// إظهار زر التحكم عند التمرير على الفيديو
-document.addEventListener('mousemove', (e) => {
-    const controlButton = document.getElementById('videoControlMini');
-    const video = document.getElementById('independentBackgroundVideo');
+// وظائف مساعدة
+function testVideo() {
+    const testVideos = [
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4'
+    ];
     
-    if (!controlButton || !video) return;
+    const video = testVideos[Math.floor(Math.random() * testVideos.length)];
     
-    // إذا كان الماوس في الزاوية اليمنى السفلى
-    if (e.clientX > window.innerWidth - 100 && e.clientY > window.innerHeight - 100) {
-        controlButton.style.display = 'block';
-        
-        // إخفاء بعد 3 ثواني
-        setTimeout(() => {
-            controlButton.style.display = 'none';
-        }, 3000);
+    fetch(video)
+        .then(res => res.blob())
+        .then(blob => {
+            const file = new File([blob], 'test.mp4', { type: 'video/mp4' });
+            universalVideoPlayer.uploadVideo(file);
+            showMessage('Test video loaded', 'success');
+        })
+        .catch(() => {
+            showMessage('Test video failed, using local method', 'warning');
+            // يمكنك إضافة فيديو محلي مدمج هنا
+        });
+}
+
+function removeVideo() {
+    if (confirm('Remove background video?')) {
+        localStorage.removeItem('universal_video');
+        universalVideoPlayer.cleanup();
+        showMessage('Video removed', 'info');
+    }
+}
+
+function showMessage(msg, type) {
+    if (window.showToast) {
+        window.showToast(msg, type);
+    } else {
+        console.log(`${type}: ${msg}`);
+    }
+}
+
+// تنظيف عند الإغلاق
+window.addEventListener('beforeunload', () => {
+    if (universalVideoPlayer) {
+        universalVideoPlayer.cleanup();
     }
 });
 </script>
+
+<style>
+/* تأكيد أن الفيديو في الخلفية */
+#universalBgVideo {
+    z-index: -99999 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    min-width: 100% !important;
+    min-height: 100% !important;
+}
+
+/* تأكيد أن التايمر في المقدمة */
+#app, .timer-container, .control-panel {
+    position: relative !important;
+    z-index: 1000 !important;
+}
+</style>
 </body>
 </html> 
