@@ -11754,183 +11754,182 @@ console.log("✅ النظام جاهز - الإعدادات تفتح يدويا�
 </script>
 <script>
 (function() {
-    // 1. إضافة تنسيقات الفيديو والواجهة
-    const videoStyles = document.createElement('style');
-    videoStyles.innerHTML = `
-        #proVideoBackground {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: -1; 
-            display: none;
-            pointer-events: none;
-            transition: opacity 0.5s ease;
-        }
-        .video-settings-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 1.25rem;
-            margin-top: 1rem;
-        }
-    `;
-    document.head.appendChild(videoStyles);
+    // 1. إعداد الحاويات في الخلفية
+    if (!document.getElementById('bgVideoContainer')) {
+        const bgDiv = document.createElement('div');
+        bgDiv.id = 'bgVideoContainer';
+        bgDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; pointer-events:none; overflow:hidden; display:none;";
+        
+        // وسم الفيديو للملفات المباشرة
+        const vElement = document.createElement('video');
+        vElement.id = 'proVideoBackground';
+        vElement.loop = true; vElement.muted = true; vElement.autoplay = true;
+        vElement.setAttribute('playsinline', '');
+        vElement.style.cssText = "width:100%; height:100%; object-fit:cover;";
+        
+        // وسم الـ Iframe لليوتيوب
+        const ytElement = document.createElement('iframe');
+        ytElement.id = 'proYoutubeBackground';
+        ytElement.style.cssText = "width:300%; height:100%; margin-left:-100%; pointer-events:none; border:none;";
+        ytElement.style.display = "none";
 
-    // 2. إنشاء عنصر الفيديو
-    const vElement = document.createElement('video');
-    vElement.id = 'proVideoBackground';
-    vElement.loop = true;
-    vElement.muted = true;
-    vElement.autoplay = true;
-    vElement.setAttribute('playsinline', '');
-    document.body.prepend(vElement);
+        bgDiv.appendChild(vElement);
+        bgDiv.appendChild(ytElement);
+        document.body.prepend(bgDiv);
+    }
 
-    // 3. دالة حقن القسم داخل الإعدادات
-    function injectVideoTab() {
-        const settingsContent = document.querySelector('.settings-content');
-        if (!settingsContent || document.getElementById('customVideoSection')) return;
+    // 2. دالة لاستخراج ID اليوتيوب
+    function getYoutubeID(url) {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    }
 
-        const section = document.createElement('div');
-        section.id = 'customVideoSection';
-        section.className = 'tab-content mt-6'; 
-        section.innerHTML = `
-            <div class="video-settings-card">
-                <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-indigo-400">
-                    <i class="fas fa-video"></i> خلفية فيديو حية
-                </h3>
-                
-                <div class="space-y-5">
-                    <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl">
-                        <span class="text-sm font-medium">تشغيل الخلفية</span>
-                        <div id="vToggle" class="toggle-switch" onclick="handleVideoToggle()">
-                            <div class="toggle-switch-handle"></div>
-                        </div>
+    // 3. دالة بناء القسم بتصميم مطابق للإعدادات
+    function createVideoSectionHTML() {
+        const container = document.getElementById('bgVideoContainer');
+        const isActive = container.style.display === 'block';
+        const currentOpacity = Math.round(container.style.opacity * 100) || 40;
+
+        return `
+            <div id="customVideoSection" class="space-y-6 animate-fade-in" style="margin-top: 2rem; padding-top: 2rem; border-top: 1px dashed rgba(255,255,255,0.1);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-medium">خلفية الفيديو الحية</h3>
+                        <p class="text-xs opacity-50">يدعم ملفات MP4 وروابط YouTube</p>
                     </div>
-
-                    <div class="space-y-2">
-                        <label class="text-xs opacity-60 uppercase tracking-wider">رابط الفيديو (Direct URL)</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="vUrlInput" placeholder="https://example.com/video.mp4" 
-                                   class="input-field flex-1 text-sm bg-black/20">
-                            <button onclick="applyVUrl()" class="btn-primary" style="padding: 10px 15px;">
-                                <i class="fas fa-check"></i>
-                            </button>
-                        </div>
+                    <div id="vToggle" class="toggle-switch ${isActive ? 'active' : ''}" onclick="handleVideoToggle()">
+                        <div class="toggle-switch-handle"></div>
                     </div>
+                </div>
 
-                    <div class="pt-2">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 hover:border-indigo-500/50 transition-all cursor-pointer" onclick="document.getElementById('vLocalFile').click()">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">رفع فيديو محلي</p>
+                                <p class="text-xs opacity-50">من جهازك مباشرة</p>
+                            </div>
+                        </div>
                         <input type="file" id="vLocalFile" accept="video/*" class="hidden" onchange="handleVUpload(this)">
-                        <button onclick="document.getElementById('vLocalFile').click()" class="btn-secondary w-full text-sm py-3">
-                            <i class="fas fa-upload mr-2"></i> رفع فيديو من جهازك
-                        </button>
                     </div>
 
-                    <div class="space-y-2">
-                        <div class="flex justify-between text-xs opacity-60">
-                            <span>شفافية الفيديو</span>
-                            <span><span id="vOpVal">40</span>%</span>
+                    <div class="bg-white/5 p-4 rounded-2xl border border-white/10 hover:border-red-500/50 transition-all cursor-pointer" onclick="promptVideoUrl()">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-500">
+                                <i class="fab fa-youtube"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium">رابط فيديو / YouTube</p>
+                                <p class="text-xs opacity-50">الصق الرابط هنا</p>
+                            </div>
                         </div>
-                        <input type="range" id="vOpacity" min="0" max="100" value="40" 
-                               class="range-slider w-full" oninput="updateVOpacity(this.value)">
                     </div>
+                </div>
+
+                <div class="bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <div class="flex justify-between mb-4">
+                        <span class="text-sm opacity-70">درجة الشفافية</span>
+                        <span class="text-sm font-mono text-indigo-400" id="vOpVal">${currentOpacity}%</span>
+                    </div>
+                    <input type="range" id="vOpacity" min="0" max="100" value="${currentOpacity}" 
+                           class="range-slider w-full" oninput="updateVOpacity(this.value)">
                 </div>
             </div>
         `;
-        settingsContent.appendChild(section);
-        loadVPreferences();
     }
 
-    // 4. وظائف التحكم مع SweetAlert
+    // 4. وظائف التحكم والتغيير
     window.handleVideoToggle = function() {
+        const container = document.getElementById('bgVideoContainer');
         const btn = document.getElementById('vToggle');
         const active = btn.classList.toggle('active');
-        vElement.style.display = active ? 'block' : 'none';
-        saveVPreferences();
+        container.style.display = active ? 'block' : 'none';
+        saveVPrefs();
     };
 
-    window.applyVUrl = function() {
-        const url = document.getElementById('vUrlInput').value;
-        if(url) {
-            vElement.src = url;
-            vElement.play().then(() => {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'تم تفعيل الرابط',
-                    text: 'خلفية الفيديو تعمل الآن بنجاح',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    background: '#1e293b',
-                    color: '#fff'
-                });
-            }).catch(err => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'خطأ في الرابط',
-                    text: 'تأكد من أن الرابط مباشر وينتهي بصيغة mp4',
-                    background: '#1e293b',
-                    color: '#fff'
-                });
-            });
-            saveVPreferences();
+    window.promptVideoUrl = async function() {
+        const { value: url } = await Swal.fire({
+            title: 'رابط الفيديو',
+            input: 'url',
+            inputPlaceholder: 'رابط فيديو مباشر أو يوتيوب...',
+            showCancelButton: true,
+            confirmButtonText: 'تطبيق',
+            cancelButtonText: 'إلغاء',
+            background: '#0f172a',
+            color: '#fff',
+            confirmButtonColor: '#6366f1'
+        });
+        
+        if (url) {
+            setVideoSource(url);
+            Swal.fire({ icon: 'success', title: 'تم التحديث', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
         }
     };
+
+    function setVideoSource(url) {
+        const vTag = document.getElementById('proVideoBackground');
+        const ytTag = document.getElementById('proYoutubeBackground');
+        const ytID = getYoutubeID(url);
+
+        if (ytID) {
+            vTag.style.display = "none";
+            vTag.pause();
+            ytTag.src = `https://www.youtube.com/embed/${ytID}?autoplay=1&mute=1&loop=1&playlist=${ytID}&controls=0&showinfo=0&rel=0&iv_load_policy=3`;
+            ytTag.style.display = "block";
+        } else {
+            ytTag.style.display = "none";
+            ytTag.src = "";
+            vTag.src = url;
+            vTag.style.display = "block";
+            vTag.play().catch(e => console.log("Direct video error"));
+        }
+        saveVPrefs();
+    }
 
     window.handleVUpload = function(input) {
         if (input.files && input.files[0]) {
             const url = URL.createObjectURL(input.files[0]);
-            vElement.src = url;
-            vElement.play();
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'تم رفع الفيديو!',
-                text: 'تم تعيين ملفك كخلفية بنجاح',
-                confirmButtonColor: '#6366f1',
-                background: '#1e293b',
-                color: '#fff'
-            });
-            saveVPreferences();
+            setVideoSource(url);
         }
     };
 
     window.updateVOpacity = function(val) {
-        document.getElementById('vOpVal').textContent = val;
-        vElement.style.opacity = val / 100;
-        saveVPreferences();
+        document.getElementById('vOpVal').textContent = val + '%';
+        document.getElementById('bgVideoContainer').style.opacity = val / 100;
+        saveVPrefs();
     };
 
-    function saveVPreferences() {
-        const data = {
-            enabled: document.getElementById('vToggle').classList.contains('active'),
-            url: document.getElementById('vUrlInput').value,
-            opacity: document.getElementById('vOpacity').value
-        };
-        localStorage.setItem('pt_video_bg_v1', JSON.stringify(data));
+    function saveVPrefs() {
+        const container = document.getElementById('bgVideoContainer');
+        const vTag = document.getElementById('proVideoBackground');
+        const ytTag = document.getElementById('proYoutubeBackground');
+        localStorage.setItem('pt_video_pref_v2', JSON.stringify({
+            enabled: container.style.display === 'block',
+            opacity: container.style.opacity,
+            src: ytTag.src || vTag.src
+        }));
     }
 
-    function loadVPreferences() {
-        const saved = localStorage.getItem('pt_video_bg_v1');
-        if (saved) {
-            const d = JSON.parse(saved);
-            if (d.enabled) {
-                document.getElementById('vToggle').classList.add('active');
-                vElement.style.display = 'block';
-            }
-            document.getElementById('vUrlInput').value = d.url || '';
-            document.getElementById('vOpacity').value = d.opacity || 40;
-            document.getElementById('vOpVal').textContent = d.opacity || 40;
-            vElement.style.opacity = (d.opacity || 40) / 100;
-            if (d.url) vElement.src = d.url;
+    // المراقبة المستمرة للحقن
+    setInterval(() => {
+        const settings = document.querySelector('.settings-content');
+        if (settings && !document.getElementById('customVideoSection')) {
+            settings.insertAdjacentHTML('beforeend', createVideoSectionHTML());
         }
-    }
+    }, 500);
 
-    // تكرار محاولة الحقن لضمان الظهور مع الـ Side Menu
-    setInterval(injectVideoTab, 1000);
+    // تحميل الإعدادات عند البدء
+    window.addEventListener('load', () => {
+        const saved = JSON.parse(localStorage.getItem('pt_video_pref_v2') || '{}');
+        const container = document.getElementById('bgVideoContainer');
+        if (saved.src) setVideoSource(saved.src);
+        container.style.display = saved.enabled ? 'block' : 'none';
+        container.style.opacity = saved.opacity || 0.4;
+    });
 })();
 </script>
 </body>
